@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import {provide} from "vue";
+import {LocalStorageApi} from "@/service/LocalStorageApi.ts";
+
+provide("LocalStorageApi", new LocalStorageApi());
 </script>
 
 <template>
-  <div class="bg-moving min-h-screen flex">
+  <div class="min-h-screen flex">
     <router-view />
   </div>
 </template>

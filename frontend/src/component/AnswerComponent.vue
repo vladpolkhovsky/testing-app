@@ -1,20 +1,37 @@
 <script setup lang="ts">
 import type {AnswerOption} from "@/model/AnswerOption.ts";
+import {ref} from "vue";
 
-const props = defineProps<{
-  options: AnswerOption[]
-}>();
+const answerOptions = ref<AnswerOption[]>();
+
+const updateAnswerOptions = (options: AnswerOption[]) => {
+  answerOptions.value = options;
+}
+
+const showOnlyCorrect = () => {
+  answerOptions.value = answerOptions.value?.filter(t => t.isCorrect)
+}
+
+defineExpose({
+  updateAnswerOptions,
+  showOnlyCorrect
+});
+
 </script>
 
 <template>
-  <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 text-2xl">
-    <div class="border rounded-xl px-3 py-2 flex gap-3 items-center bg-gradient-to-r from-sky-300/70 to-white/50 hover:bg-green-300 transition-all duration-200 ease-in-out" v-for="option in options">
-      <span class="text-justify text-2xl rounded-md bg-fuchsia-900/10 px-2 py-1 text-fuchsia-900 inset-ring inset-ring-blue-500/20">{{option.optionVariant}}</span>
-      <span>{{ option.optionText }}</span>
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 gap-y-5 text-2xl p-3">
+    <div class="item flex flex-row justify-start items-center border-b-3 border-dashed mx-3 pb-2" v-for="option in answerOptions">
+      <div class="mr-5 text-5xl self-end font-italic">{{option.optionVariant}}.</div>
+      <div class="text-3xl self-end">{{option.optionText}}</div>
     </div>
   </div>
 </template>
 
 <style scoped>
+@import "@/main.css";
 
+.item:hover {
+  @apply bg-gradient-to-t from-emerald-500/50 to-transparent
+}
 </style>

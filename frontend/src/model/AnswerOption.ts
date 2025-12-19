@@ -1,5 +1,6 @@
 export interface AnswerOption {
   id: string,
+  isCorrect: boolean,
   optionVariant: string,
   optionText: string
 }
@@ -19,7 +20,8 @@ export function getRandomAnswers(): AnswerOption[] {
     return {
       id: (Math.random() * 100).toString(),
       optionText: text,
-      optionVariant: 'A' + index
+      optionVariant: String.fromCharCode('A'.charCodeAt(0) + index),
+      isCorrect: index == 0
     }
   })
 }

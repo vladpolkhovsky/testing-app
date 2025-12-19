@@ -1,6 +1,6 @@
-export interface RatingItem {
-  userId: string,
-  username: string,
+import type {User} from "@/model/User.ts";
+
+export interface RatingItem extends User {
   rating: number
 }
 
