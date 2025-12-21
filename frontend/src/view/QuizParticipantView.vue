@@ -37,7 +37,7 @@ onMounted(() => {
     router.push({
       name: "QuizLoginView",
       query: {
-        hardRedirectTo: window.location
+        hardRedirectTo: window.location.toString()
       }
     })
   }

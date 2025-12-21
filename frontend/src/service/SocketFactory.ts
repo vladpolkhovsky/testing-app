@@ -4,7 +4,7 @@ import type {OnConnectCallback} from "@/model/types.ts";
 
 export class SocketFactory {
 
-  private static readonly SERVER_URL: string = "http://localhost:8080/api/quiz/ws";
+  private static readonly SERVER_URL: string = "/api/quiz/ws";
 
   public static create(onConnectCallback: OnConnectCallback): Client {
     const socket = new SockJS(SocketFactory.SERVER_URL);

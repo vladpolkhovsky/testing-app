@@ -110,7 +110,7 @@ const updateModel = (newItems: RatingItem[]) => {
   update();
 }
 
-window.getRandomRating = () => {
+(window as any).getRandomRating = () => {
   updateModel(getRandomRating())
 }
 

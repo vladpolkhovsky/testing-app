@@ -9,9 +9,17 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    vue(),
-    vueDevTools()
+    vueDevTools(),
+    vue()
   ],
+  server: {
+    proxy: {
+      '/api/quiz': {
+        target: 'http://localhost:8080',
+        ws: true
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
