@@ -9,7 +9,7 @@ const updateAnswerOptions = (options: AnswerOption[]) => {
 }
 
 const showOnlyCorrect = () => {
-  answerOptions.value = answerOptions.value?.filter(t => t.isCorrect)
+  answerOptions.value = answerOptions.value?.filter(t => t.correct)
 }
 
 defineExpose({

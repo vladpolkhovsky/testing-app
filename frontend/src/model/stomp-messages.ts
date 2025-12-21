@@ -4,12 +4,17 @@ import type {RatingItem} from "@/model/RatingItem.ts";
 
 export interface QuizInitializationMessage extends QuizMessage {
   type: "INIT_MESSAGE",
+
   question: Question,
   answers: AnswerOption[],
   ratingItems: RatingItem[],
+
   questionId: string,
   nextQuestionId?: string,
-  gameStarted: boolean
+
+  gameStarted: boolean,
+  roundStarted: boolean,
+  gameFinished: boolean
 }
 
 export interface QuizShowNewQuestionMessage extends QuizMessage {

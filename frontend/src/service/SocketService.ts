@@ -1,142 +1,129 @@
-import SockJS from 'sockjs-client';
-import type { User } from "@/model/User.ts";
-
+import type {Client} from "@stomp/stompjs";
+import {SocketFactory} from "@/service/SocketFactory.ts";
 import type {
-  OnConnectCallback, OnStartQuizQuestionCallback,
-  OnStompErrorCallback,
-  Optional
+  OnConnectCallback, OnEndQuizQuestionCallback, OnQuizInitializationMessageCallback,
+  OnQuizShowNewQuestionMessageCallback, OnQuizUpdateRatingMessageCallback,
+  OnStartQuizQuestionCallback
 } from "@/model/types.ts";
-
-import { Client } from "@stomp/stompjs";
-
+import type {User} from "@/model/User.ts";
 import type {
   QuizInitializationMessage,
-  QuizMessage,
-  QuizMessageType,
-  QuizShowNewQuestionMessage,
+  QuizMessage, QuizNewRatingMessage,
   QuizRoundMessage,
-  QuizNewRatingMessage
+  QuizShowNewQuestionMessage
 } from "@/model/stomp-messages.ts";
 
-export type MessageHandler<T extends QuizMessage> = {
-  type: QuizMessageType;
-  parser: (data: any) => T;
-  callback: (message: T) => void;
-};
-
 export class SocketService {
-  private roomId: string | null = null;
-  private user: User | null = null;
-  private client: Client | null = null;
+
+  private roomId: string;
+  private user?: User;
+  private client: Client;
   private onConnectCallback: OnConnectCallback | null = null;
-  private onStompErrorCallback: OnStompErrorCallback | null = null;
-  private messageHandlers = new Map<QuizMessageType, MessageHandler<any>>();
+  private handleQuizInitializationMessage?: OnQuizInitializationMessageCallback;
+  private handleQuizShowNewQuestionMessageCallback?: OnQuizShowNewQuestionMessageCallback;
+  private handleStartQuizQuestionCallback?: OnStartQuizQuestionCallback;
+  private handleEndQuizQuestionCallback?: OnEndQuizQuestionCallback;
+  private handleQuizUpdateRatingMessageCallback?: OnQuizUpdateRatingMessageCallback;
 
   public constructor(roomId: string, user?: User) {
     this.roomId = roomId;
-    this.user = user ?? null;
+    this.user = user;
+
+    this.client = SocketFactory.create(() => {
+      this.setupMainHandlers(this.roomId, this.client);
+
+      if (this.user) this.notifyConnection();
+
+      this.onConnectCallback?.call(this);
+    });
   }
 
-  public setOnConnectedCallback(callback: OnConnectCallback): void {
+  public setOnConnectCallback(callback: OnConnectCallback) {
     this.onConnectCallback = callback;
   }
 
-  public setOnStompErrorCallback(callback: OnStompErrorCallback): void {
-    this.onStompErrorCallback = callback;
-  }
+  private setupMainHandlers(roomId: string, client: Client) {
+    client.subscribe(`/queue/quiz/${roomId}/updates`, message => {
+      const pasred = JSON.parse(message.body);
+      const type = (pasred as QuizMessage).type;
+      console.log(`Message /queue/quiz/${roomId}/updates`, pasred);
 
-  public registerMessageHandler<T extends QuizMessage>(
-    type: QuizMessageType,
-    callback: (message: T) => void
-  ): void {
-    this.messageHandlers.set(type, {
-      type: type,
-      parser: obj => obj as T,
-      callback: callback
+      if (type == "INIT_MESSAGE") {
+        const typedMessage = pasred as QuizInitializationMessage
+        this.handleQuizInitializationMessage?.call(this, typedMessage);
+      }
+
+      if (type == "NEW_QUESTION") {
+        const typedMessage = pasred as QuizShowNewQuestionMessage
+        this.handleQuizShowNewQuestionMessageCallback?.call(this, typedMessage);
+      }
+
+      if (type == "START_ROUND") {
+        const typedMessage = pasred as QuizRoundMessage
+        this.handleStartQuizQuestionCallback?.call(this, typedMessage);
+      }
+
+      if (type == "STOP_ROUND") {
+        const typedMessage = pasred as QuizRoundMessage
+        this.handleEndQuizQuestionCallback?.call(this, typedMessage);
+      }
+
+      if (type == "NEW_RATING") {
+        const typedMessage = pasred as QuizNewRatingMessage
+        this.handleQuizUpdateRatingMessageCallback?.call(this, typedMessage);
+      }
     });
   }
 
-  public connect(): void {
-    if (!this.roomId) {
-      throw new Error("Room ID is not set");
-    }
+  public startQuiz() {
+    this.client.publish({
+      destination: `/app/quiz/${this.roomId}/start`
+    });
+  }
 
-    this.client = SocketService.createClient(
-      this.onConnectCallback,
-      this.onStompErrorCallback
-    );
+  public sendAnswer(id: string) {
+    this.client.publish({
+      destination: `/app/quiz/${this.roomId}/${this.user?.userId}/send`,
+      body: JSON.stringify({
+        answerId: id
+      }),
+    });
+  }
 
-    SocketService.configureMessageHandlers(
-      this.client,
-      this.roomId,
-      this.messageHandlers
-    );
+  private notifyConnection() {
+    this.client.publish({
+      destination: `/app/quiz/${this.roomId}`,
+      body: JSON.stringify(this.user)
+    });
+  }
 
+  public notifyConnectionSilent() {
+    this.client.publish({
+      destination: `/app/quiz/${this.roomId}/silent`
+    });
+  }
+
+  public activate(): void {
     this.client.activate();
   }
 
-  public disconnect(): void {
-    if (this.client) {
-      this.client.deactivate();
-      this.client = null;
-    }
+  public setOnQuizInitializationMessageCallback(handleQuizInitializationMessage: OnQuizInitializationMessageCallback) {
+    this.handleQuizInitializationMessage = handleQuizInitializationMessage;
   }
 
-  public sendAnswer(questionId: string, answerId: string): void {
-    if (!this.client || !this.client.connected) {
-      console.error("Socket is not connected");
-      return;
-    }
-
-    this.client.publish({
-      destination: `/app/quiz/${this.roomId}/answer`,
-      body: JSON.stringify({
-        questionId,
-        answerId,
-        userId: this.user?.userId
-      })
-    });
+  public setOnStartQuizQuestionCallback(handleStartQuizQuestionCallback: OnStartQuizQuestionCallback) {
+    this.handleStartQuizQuestionCallback = handleStartQuizQuestionCallback;
   }
 
-  public startGame() {
-
+  public setOnEndQuizQuestionCallback(handleEndQuizQuestionCallback: OnEndQuizQuestionCallback) {
+    this.handleEndQuizQuestionCallback = handleEndQuizQuestionCallback;
   }
 
-  private static createClient(
-    onConnectCallback: Optional<OnConnectCallback>,
-    onStompErrorCallback: Optional<OnStompErrorCallback>
-  ): Client {
-    return new Client({
-      webSocketFactory: () => new SockJS("/ws"),
-      debug: str => console.log('debug', str),
-      reconnectDelay: 500,
-      heartbeatIncoming: 1000,
-      heartbeatOutgoing: 1000,
-      onConnect: onConnectCallback ?? undefined,
-      onStompError: onStompErrorCallback ?? undefined
-    });
+  public setOnQuizShowNewQuestionMessageCallback(handleQuizShowNewQuestionMessageCallback: OnQuizShowNewQuestionMessageCallback) {
+    this.handleQuizShowNewQuestionMessageCallback = handleQuizShowNewQuestionMessageCallback;
   }
 
-  private static configureMessageHandlers(
-    client: Client,
-    roomId: string,
-    handlers: Map<QuizMessageType, MessageHandler<any>>
-  ): void {
-    client.subscribe(`/topic/quiz/${roomId}`, message => {
-      try {
-        const rawMessage = JSON.parse(message.body);
-        const quizMessage = rawMessage as QuizMessage;
-        const handler = handlers.get(quizMessage.type);
-
-        if (handler) {
-          const typedMessage = handler.parser(rawMessage);
-          handler.callback(typedMessage);
-        } else {
-          console.warn(`No handler registered for message type: ${quizMessage.type}`);
-        }
-      } catch (error) {
-        console.error('Error processing message:', error);
-      }
-    });
+  public setOnQuizUpdateRatingMessageCallback(handleQuizUpdateRatingMessageCallback: OnQuizUpdateRatingMessageCallback) {
+    this.handleQuizUpdateRatingMessageCallback = handleQuizUpdateRatingMessageCallback;
   }
 }

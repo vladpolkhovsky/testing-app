@@ -3,6 +3,8 @@ import {ref, onMounted, inject} from 'vue'
 import {getRandomRating, type RatingItem} from "@/model/RatingItem.ts"
 import LiquidGlass from "@/component/LiquidGlass.vue";
 import {SocketService} from "@/service/SocketService.ts";
+import {it} from "node:test";
+import gsap from "gsap";
 
 interface RankedItem {
   id: string
@@ -37,35 +39,79 @@ const initializeItems = () => {
 }
 
 const updateModel = (newItems: RatingItem[]) => {
+  console.log(newItems);
+
+  newItems.forEach((item) => {
+    const find = rankedItems.value.find(value => value.item.userId === item.userId);
+    console.log(find);
+    if (!find) {
+      rankedItems.value.push({
+        diff: 0,
+        index: rankedItems.value.length + 1,
+        position: rankedItems.value.length,
+        id: item.userId,
+        item: item,
+        oldRank: item.rating
+      })
+    }
+  })
+
+  console.log(rankedItems.value);
+
+  let hasAnyDiff = false;
+
   const updated = rankedItems.value.map(ranked => {
     const newItem = newItems.find(i => i.userId === ranked.id)
+
     if (newItem) {
       const diff = newItem.rating - ranked.item.rating
-      return {
-        ...ranked,
-        diff,
-        item: {...ranked.item, rating: newItem.rating}
+      if (diff != 0) {
+
+        hasAnyDiff = true;
+
+        gsap.to(ranked, {
+          diff: diff,
+          duration: 5,
+          ease: "power4.inOut"
+        });
+        gsap.to(ranked.item, {
+          rating: ranked.item.rating + diff,
+          delay: 7,
+          duration: 3,
+          ease: "power4.inOut"
+        });
+        gsap.to(ranked, {
+          diff: 0,
+          delay: 7,
+          duration: 3,
+          ease: "power4.inOut"
+        });
       }
+      return ranked
     }
+
     return ranked
   })
 
-  updated.sort((a, b) => b.item.rating - a.item.rating)
+  const update = () => {
+    updated.sort((a, b) => b.item.rating - a.item.rating);
+    updated.forEach((item, index) => {
+      item.index = index + 1
+      item.position = index
+    });
+    rankedItems.value = updated
+  }
 
-  updated.forEach((item, index) => {
-    item.index = index + 1
-    item.position = index
-  })
+  if (hasAnyDiff) {
+    setTimeout(update, 12_000);
+    return;
+  }
 
-  rankedItems.value = updated
+  update();
 }
 
-window.updateModel = () => {
-  updateModel(getRandomRating());
-}
-
-window.addUser = () => {
-  addUser({...getRandomRating()[0], userId: new Date().toString(), username: new Date().toString()});
+window.getRandomRating = () => {
+  updateModel(getRandomRating())
 }
 
 const addUser = (item: RatingItem) => {
@@ -109,13 +155,18 @@ const showStartGameButton = () => {
 
 const onShowStartGameButton = () => {
   showStartGameButtonRef.value = false;
-  socketService?.startGame();
+  socketService?.startQuiz();
+}
+
+const clearUsers = () => {
+  rankedItems.value = []
 }
 
 defineExpose({
   updateModel,
   addUser,
-  showStartGameButton
+  showStartGameButton,
+  clearUsers,
 });
 
 onMounted(() => {
@@ -127,17 +178,19 @@ onMounted(() => {
 <template>
   <LiquidGlass class="rounded-xl">
     <div ref="container" class="rating-container">
-      <TransitionGroup name="list" tag="div" class="space-y-3">
-        <div class="flex w-full justify-between items-center p-3" v-if="showStartGameButtonRef">
-          <div class="text-center text-3xl">
-            Ожидание участников
-          </div>
-          <button class="border bg-emerald-100 rounded-xl p-3 hover:bg-emerald-400 transition-all duration-300 text-2xl font-medium"
-                  v-if="rankedItems.length > 0"
-                  @click="onShowStartGameButton()">
-            Начать игру
-          </button>
+
+      <div class="flex w-full justify-between items-center p-3" v-if="showStartGameButtonRef">
+        <div class="text-center text-3xl">
+          Ожидание участников
         </div>
+        <button
+            class="border bg-emerald-100 rounded-xl p-3 hover:bg-emerald-400 transition-all duration-300 text-2xl font-medium"
+            v-if="rankedItems.length > 0"
+            @click="onShowStartGameButton()">
+          Начать игру
+        </button>
+      </div>
+      <TransitionGroup name="list" tag="div" class="space-y-3">
         <div v-for="item in rankedItems"
              :key="item.id"
              :id="`item-${item.id}`"
@@ -174,7 +227,12 @@ onMounted(() => {
               </div>
               <div class="flex items-center space-x-6" v-if="item.diff != 0">
                 <div class="text-start">
-                  <div class="text-2xl font-bold text-gray-900">{{ formatNumber(item.diff) }}</div>
+                  <div :class="[ 'text-2xl font-bold', {
+                    'text-green-900': item.diff > 0,
+                    'text-red-900': item.diff < 0
+                    }]">
+                    {{ formatNumber(item.diff) }}
+                  </div>
                   <div class="text-sm text-gray-500">Результат раунда</div>
                 </div>
               </div>

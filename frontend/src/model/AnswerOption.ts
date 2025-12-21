@@ -1,10 +1,9 @@
 export interface AnswerOption {
   id: string,
-  isCorrect: boolean,
+  correct: boolean,
   optionVariant: string,
   optionText: string
 }
-
 
 export function getRandomAnswers(): AnswerOption[] {
   const texts = [
@@ -21,7 +20,7 @@ export function getRandomAnswers(): AnswerOption[] {
       id: (Math.random() * 100).toString(),
       optionText: text,
       optionVariant: String.fromCharCode('A'.charCodeAt(0) + index),
-      isCorrect: index == 0
+      correct: index == 0
     }
   })
 }

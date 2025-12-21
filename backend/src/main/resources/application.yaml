@@ -1,3 +1,9 @@
-spring:
-  application:
-    name: tests-app
+server:
+  port: 8080
+  servlet:
+    context-path: /api/quiz
+
+logging:
+  level:
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging.simp: DEBUG

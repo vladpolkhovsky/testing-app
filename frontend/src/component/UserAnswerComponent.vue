@@ -1,25 +1,27 @@
 <script setup lang="ts">
 import type {AnswerOption} from "@/model/AnswerOption.ts";
-import {ref} from "vue";
+import {inject, ref} from "vue";
+import type {SocketService} from "@/service/SocketService.ts";
 
 const props = defineProps<{
   options?: AnswerOption[]
 }>();
 
-const answerOptions = ref<AnswerOption[]>(props.options);
+const answerOptions = ref<AnswerOption[]>(props.options ?? []);
+const socketService = inject<SocketService>("SocketService");
 
-const updateAnswerOptions = (options: AnswerOption[]) => {
+const updateOptions = (options: AnswerOption[]) => {
   isSent.value = false;
   selectedId.value = undefined;
   answerOptions.value = options;
 }
 
 const showOnlyCorrect = () => {
-  answerOptions.value = answerOptions.value?.filter(t => t.isCorrect)
+  answerOptions.value = answerOptions.value?.filter(t => t.correct)
 }
 
 defineExpose({
-  updateAnswerOptions,
+  updateOptions,
   showOnlyCorrect
 });
 
@@ -28,6 +30,7 @@ const isSent = ref<boolean>(false);
 
 const sent = (id: string) => {
   isSent.value = true;
+  socketService?.sendAnswer(id);
 }
 
 const select = (id: string) => {
