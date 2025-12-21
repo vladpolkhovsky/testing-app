@@ -7,13 +7,13 @@ WORKDIR /app
 COPY gradle gradle
 COPY gradlew gradlew
 
-RUN chmod -x ./gradlew
+RUN chmod +x ./gradlew
 RUN ./gradlew --version
 
 COPY build.gradle.kts build.gradle.kts
 COPY settings.gradle.kts settings.gradle.kts
 
-RUN chmod -x ./gradlew
+RUN chmod +x ./gradlew
 RUN ./gradlew tasks
 
 FROM alpine/java:21-jdk AS runner
