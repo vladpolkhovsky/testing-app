@@ -3,6 +3,18 @@ server:
   servlet:
     context-path: /api/quiz
 
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:6000/quiz
+    password: postgres
+    username: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+
 logging:
   level:
     org.springframework.web.socket: DEBUG

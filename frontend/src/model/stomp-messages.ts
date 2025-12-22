@@ -28,6 +28,8 @@ export interface QuizShowNewQuestionMessage extends QuizMessage {
 export interface QuizRoundMessage extends QuizMessage {
   type: "START_ROUND" | "STOP_ROUND",
   questionId: string,
+  replaceImageUrl?: string,
+  replaceText?: string,
   duration: number
 }
 

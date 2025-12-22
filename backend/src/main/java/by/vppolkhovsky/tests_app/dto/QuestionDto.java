@@ -15,6 +15,8 @@ public class QuestionDto {
     private String id;
     private String text;
     private String imageUrl;
+    private String replaceText;
+    private String replaceImageUrl;
     private List<AnswerDto> answers;
     private Integer price;
 }

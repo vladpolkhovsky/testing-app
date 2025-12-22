@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -76,15 +77,21 @@ public class QuizService {
 
         notifyShowMessageMessage(context);
 
-        executor.schedule(() -> {
-            notify(contextId, WsStartStopRoundMessageDto.start(context.getCurrentQuestionId(), ROUND_TIME));
-            executor.schedule(() -> {
-                notify(contextId, WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId()));
-                executor.schedule(() -> {
-                    stopRound(contextId);
-                }, DISCUSSION_DELAY, TimeUnit.SECONDS);
-            }, ROUND_TIME, TimeUnit.SECONDS);
-        }, TIME_START_DELEY, TimeUnit.SECONDS);
+        CompletableFuture.runAsync(() -> {}, CompletableFuture.delayedExecutor(TIME_START_DELEY, TimeUnit.SECONDS, executor))
+            .thenRunAsync(() -> notify(contextId, WsStartStopRoundMessageDto.start(context.getCurrentQuestionId(), ROUND_TIME)), executor)
+            .thenRunAsync(() -> {}, CompletableFuture.delayedExecutor(ROUND_TIME, TimeUnit.SECONDS, executor))
+            .thenRunAsync(() -> {
+                WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId());
+
+                context.getCurrentQuestion().ifPresent(q -> {
+                    stopMessage.setReplaceText(q.getReplaceText());
+                    stopMessage.setReplaceImageUrl(q.getReplaceImageUrl());
+                });
+
+                notify(contextId, stopMessage);
+            }, executor)
+            .thenRunAsync(() -> {}, CompletableFuture.delayedExecutor(DISCUSSION_DELAY, TimeUnit.SECONDS, executor))
+            .thenRunAsync(() -> stopRound(contextId), executor);
 
         log.info("Start round {}", contextId);
     }

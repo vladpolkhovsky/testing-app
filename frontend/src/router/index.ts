@@ -3,10 +3,16 @@ import QuizLoginView from "@/view/QuizLoginView.vue";
 import QuizMainView from "@/view/QuizMainView.vue";
 import QuizParticipantView from "@/view/QuizParticipantView.vue";
 import QuizListView from "@/view/QuizListView.vue";
+import QuizEditorView from "@/view/QuizEditorView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: "/editor",
+      name: "QuizEditorView",
+      component: QuizEditorView
+    },
     {
       path: "/login",
       name: "QuizLoginView",

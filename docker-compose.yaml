@@ -47,7 +47,7 @@ services:
       - "6000:5432"
     restart: unless-stopped
     volumes:
-      - ./postgres/pg-init-db.sql:/docker-entrypoint-initdb.d/postgres-init.sql
+      - ./postgres/postgrespg-init-db.sql:/docker-entrypoint-initdb.d/postgres-init.sql:rw
       - pgdata:/var/lib/postgresql/18/docker:rw
 
   frontend:

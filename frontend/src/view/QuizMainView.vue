@@ -152,6 +152,10 @@ const handleQuizRoundStopMessage = (message: QuizRoundMessage) => {
   state.value = "QUESTION_RESULT"
 
   quizQuestionViewRef.value?.showCorrect();
+  quizQuestionViewRef.value?.updateQuestion({
+    text: message?.replaceText ?? question.value!.text,
+    imageUrl: message?.replaceImageUrl ?? question.value?.imageUrl
+  });
 
   SoundEngine.nextTrack();
 }

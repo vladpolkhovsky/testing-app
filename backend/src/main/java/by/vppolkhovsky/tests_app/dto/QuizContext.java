@@ -3,10 +3,7 @@ package by.vppolkhovsky.tests_app.dto;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @Builder
@@ -30,6 +27,12 @@ public class QuizContext {
     private Boolean roundStarted = false;
     @Builder.Default
     private Boolean gameFinished = false;
+
+    public Optional<QuestionDto> getCurrentQuestion() {
+        return quiz.getQuestions().stream()
+            .filter(q -> Objects.equals(currentQuestionId, q.getId()))
+            .findAny();
+    }
 
     @Data
     @Builder
