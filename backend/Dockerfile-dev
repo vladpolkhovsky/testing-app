@@ -1,4 +1,4 @@
-FROM gradle:jdk21 AS greadle-download
+FROM gradle:jdk21-alpine AS greadle-download
 
 ENV GRADLE_USER_HOME="/home/.gradle"
 
@@ -11,7 +11,7 @@ COPY settings.gradle.kts settings.gradle.kts
 
 RUN gradle tasks
 
-FROM gradle:jdk21 AS runner
+FROM gradle:jdk21-alpine AS runner
 
 ENV GRADLE_USER_HOME="/home/.gradle"
 
