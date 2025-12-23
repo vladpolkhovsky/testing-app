@@ -68,6 +68,7 @@ services:
       spring.datasource.username: postgres
       server.servlet.context-path: /api/quiz
       server.max-http-request-header-size: 10MB
+      server.tomcat.max-http-post-size: 10MB
     restart: unless-stopped
 
 volumes:
