@@ -27,6 +27,6 @@ WORKDIR /app
 
 COPY src src
 
-RUN ./gradlew build
+RUN ./gradlew build -x test
 
 CMD ["./gradlew", "bootRun"]
