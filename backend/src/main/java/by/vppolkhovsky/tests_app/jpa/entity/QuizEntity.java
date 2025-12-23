@@ -1,25 +1,52 @@
 package by.vppolkhovsky.tests_app.jpa.entity;
 
-import jakarta.persistence.*;
+import by.vppolkhovsky.tests_app.dto.jpa.QuizV1;
+import by.vppolkhovsky.tests_app.dto.jpa.QuizVersion;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 @Entity
 @Table(name = "quizzes")
 public class QuizEntity {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", nullable = false)
     private UUID id;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, columnDefinition = "text")
     private String title;
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("order")
-    private List<QuestionEntity> questions = new ArrayList<>();
+    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "content", nullable = false, columnDefinition = "jsonb")
+    private QuizV1 content;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quiz_version", nullable = false, length = 50)
+    private QuizVersion quizVersion;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, columnDefinition = "timestamp")
+    private LocalDateTime updatedAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp")
+    private LocalDateTime createdAt;
 }

@@ -9,7 +9,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: "/editor",
+      path: "/editor/:quizId",
       name: "QuizEditorView",
       component: QuizEditorView
     },

@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.With;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,18 +14,18 @@ public class WsStartStopRoundMessageDto {
     private QuizMessageType type;
 
     @With
-    private String replaceImageUrl;
+    private String imageAlternativeId;
     @With
-    private String replaceText;
+    private String textAlternative;
 
-    private String questionId;
+    private UUID questionId;
     private Integer duration;
 
-    public static WsStartStopRoundMessageDto start(String questionId, Integer duration) {
+    public static WsStartStopRoundMessageDto start(UUID questionId, Integer duration) {
         return new WsStartStopRoundMessageDto(QuizMessageType.START_ROUND, null, null, questionId, duration);
     }
 
-    public static WsStartStopRoundMessageDto stop(String questionId) {
+    public static WsStartStopRoundMessageDto stop(UUID questionId) {
         return new WsStartStopRoundMessageDto(QuizMessageType.STOP_ROUND, null, null, questionId, 0);
     }
 }

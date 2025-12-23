@@ -15,11 +15,11 @@ public class QuizContext {
     private QuizDto quiz;
 
     @Builder.Default
-    private Map<String, Set<QuestionAnswer>> questionAnswers = new HashMap<>();
+    private Map<UUID, Set<QuestionAnswer>> questionAnswers = new HashMap<>();
     @Builder.Default
     private Map<String, UserRatingDto> userRating = new HashMap<>();
 
-    private String currentQuestionId;
+    private UUID currentQuestionId;
 
     @Builder.Default
     private Boolean gameStarted = false;
@@ -39,10 +39,10 @@ public class QuizContext {
     @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     public static class QuestionAnswer {
         @EqualsAndHashCode.Include
-        private String questionId;
+        private UUID questionId;
         @EqualsAndHashCode.Include
         private String userId;
-        private String answerId;
+        private UUID answerId;
         private LocalDateTime time;
     }
 }

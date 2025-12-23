@@ -84,8 +84,8 @@ public class QuizService {
                 WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId());
 
                 context.getCurrentQuestion().ifPresent(q -> {
-                    stopMessage.setReplaceText(q.getReplaceText());
-                    stopMessage.setReplaceImageUrl(q.getReplaceImageUrl());
+                    stopMessage.setTextAlternative(q.getTextAlternative());
+                    stopMessage.setImageAlternativeId(q.getImageAlternativeId());
                 });
 
                 notify(contextId, stopMessage);
@@ -101,19 +101,19 @@ public class QuizService {
 
         context.setRoundStarted(false);
 
-        String questionId = context.getCurrentQuestionId();
+        UUID questionId = context.getCurrentQuestionId();
 
         Optional<QuestionDto> question = context.getQuiz().getQuestions().stream()
             .filter(q -> Objects.equals(q.getId(), questionId))
             .findAny();
 
-        String correctAnswerId = question.stream()
+        UUID correctAnswerId = question.stream()
             .map(QuestionDto::getAnswers)
             .flatMap(Collection::stream)
             .filter(AnswerDto::getIsCorrect)
             .findFirst()
             .map(AnswerDto::getId)
-            .orElse(UUID.randomUUID().toString());
+            .orElse(UUID.randomUUID());
 
         List<QuizContext.QuestionAnswer> correctAnswers = context.getQuestionAnswers().getOrDefault(questionId, Set.of()).stream()
             .filter(q -> Objects.equals(q.getAnswerId(), correctAnswerId))
@@ -141,10 +141,10 @@ public class QuizService {
         log.info("Round stopped {}", contextId);
     }
 
-    public void saveAnswer(String contextId, String userId, String answerId) {
+    public void saveAnswer(String contextId, String userId, UUID answerId) {
         QuizContext context = quizContextHolder.getContext(contextId);
         if (context.getRoundStarted()) {
-            String questionId = context.getCurrentQuestionId();
+            UUID questionId = context.getCurrentQuestionId();
 
             QuizContext.QuestionAnswer answer = QuizContext.QuestionAnswer.builder()
                 .answerId(answerId)
@@ -154,10 +154,7 @@ public class QuizService {
                 .build();
 
             context.getQuestionAnswers().computeIfAbsent(questionId, (k) -> new HashSet<>());
-
-            if (!context.getQuestionAnswers().get(questionId).contains(answer)) {
-                context.getQuestionAnswers().get(questionId).add(answer);
-            }
+            context.getQuestionAnswers().get(questionId).add(answer);
 
             log.info("Save answer {}", answer);
         }

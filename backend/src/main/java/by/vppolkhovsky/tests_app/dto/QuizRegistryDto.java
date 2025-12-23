@@ -11,9 +11,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AnswerDto {
+public class QuizRegistryDto {
     private UUID id;
-    private String optionVariant;
-    private String optionText;
-    private Boolean isCorrect;
+    private String title;
 }

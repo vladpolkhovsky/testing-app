@@ -17,6 +17,7 @@ import java.util.Objects;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface QuizMapper {
 
+    @Mapping(target = "title", source = "quiz.title")
     @Mapping(target = "ratingItems", source = "userRating", qualifiedByName = "resolveRatingItems")
     @Mapping(target = "type", constant = "INIT_MESSAGE")
     @Mapping(target = "quizId", source = "quiz.id")

@@ -15,23 +15,23 @@ import java.util.UUID;
 @Table(name = "images")
 public class ImageEntity {
     @Id
-    @Column(name = "id")
+    @Column(name = "id", nullable = false)
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "name", length = 512)
+    @Column(name = "name", nullable = false, length = 512, columnDefinition = "varchar(512)")
     private String name;
 
     @Lob
     @JdbcTypeCode(Types.BINARY)
-    @Column(name = "content", columnDefinition = "BYTEA")
+    @Column(name = "content", nullable = false, columnDefinition = "bytea")
     private byte[] content;
 
     @CreationTimestamp
-    @Column(name = "created_at", columnDefinition = "timestamp")
+    @Column(name = "created_at", nullable = false, columnDefinition = "timestamp")
     private LocalDateTime updatedAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", columnDefinition = "timestamp")
+    @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp")
     private LocalDateTime createdAt;
 }

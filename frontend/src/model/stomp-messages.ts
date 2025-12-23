@@ -5,6 +5,7 @@ import type {RatingItem} from "@/model/RatingItem.ts";
 export interface QuizInitializationMessage extends QuizMessage {
   type: "INIT_MESSAGE",
 
+  title: string;
   question: Question,
   answers: AnswerOption[],
   ratingItems: RatingItem[],
@@ -28,8 +29,8 @@ export interface QuizShowNewQuestionMessage extends QuizMessage {
 export interface QuizRoundMessage extends QuizMessage {
   type: "START_ROUND" | "STOP_ROUND",
   questionId: string,
-  replaceImageUrl?: string,
-  replaceText?: string,
+  imageAlternativeId?: string,
+  textAlternative?: string,
   duration: number
 }
 

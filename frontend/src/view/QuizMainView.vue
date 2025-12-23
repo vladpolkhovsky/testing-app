@@ -28,6 +28,7 @@ let router = useRouter();
 
 const roomId = route.params.gameId as string;
 const state = ref<State>("WAITING" as State);
+const title = ref<string>();
 
 const question = ref<Question>();
 const answers = ref<AnswerOption[]>();
@@ -95,6 +96,7 @@ const handleQuizInitializationMessage = (message: QuizInitializationMessage) => 
   localStorageApi?.setQuestion(message.questionId, message.question);
   localStorageApi?.setAnswers(message.questionId, message.answers);
 
+  title.value = message.title;
   question.value = message.question;
   answers.value = message.answers;
   ratingItems.value = message.ratingItems;
@@ -153,8 +155,8 @@ const handleQuizRoundStopMessage = (message: QuizRoundMessage) => {
 
   quizQuestionViewRef.value?.showCorrect();
   quizQuestionViewRef.value?.updateQuestion({
-    text: message?.replaceText ?? question.value!.text,
-    imageUrl: message?.replaceImageUrl ?? question.value?.imageUrl
+    text: message?.textAlternative ?? question.value!.text,
+    imageId: message?.imageAlternativeId ?? question.value?.imageId
   });
 
   SoundEngine.nextTrack();
@@ -176,8 +178,8 @@ const isShowRating = ():boolean => {
 <template>
   <div class="flex flex-col shrink items-center p-3 w-full xl:w-5xl gap-3 mx-auto">
     <div class="flex items-center justify-between xl:justify-center w-full gap-3">
-      <LiquidGlass class="text-3xl font-medium grid grid-cols-1 gap-3">
-        <div class="w-fit inline-block p-3">Lorem ipsum dolor sit amet consectetur adipiscing elit.</div>
+      <LiquidGlass class="w-full text-3xl font-medium grid grid-cols-1 gap-3">
+        <div class="w-fit inline-block p-3">{{title}}</div>
         <div
             class="m-3 text-nowrap text-xl rounded-md bg-blue-500/10 px-2 py-1 text-blue-500 inset-ring inset-ring-blue-500/20 text-center">
           {{ state == 'WAITING' ? 'Ожидание участников' : 'Игра' }}

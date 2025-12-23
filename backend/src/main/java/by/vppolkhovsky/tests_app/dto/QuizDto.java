@@ -6,12 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizDto {
-    private String id;
+    private UUID id;
+    private String title;
     private List<QuestionDto> questions;
 }

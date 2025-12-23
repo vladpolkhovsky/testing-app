@@ -10,6 +10,7 @@ import java.util.List;
 public class WsQuizInitMessageDto {
     private QuizMessageType type;
     private String quizId;
+    private String title;
     private WsQuestionDto question;
     private List<WsAnswerOptionDto> answers;
     private List<WsRatingItemDto> ratingItems;
