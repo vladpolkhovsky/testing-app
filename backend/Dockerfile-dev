@@ -24,4 +24,4 @@ COPY src src
 
 RUN gradle build -x test
 
-CMD ["./gradlew", "bootRun"]
+CMD ["gradle", "bootRun"]
