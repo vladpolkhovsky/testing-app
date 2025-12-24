@@ -15,7 +15,7 @@ export function getRandomAnswers(): AnswerOption[] {
     "1905"
   ];
 
-  return texts.map<AnswerOption>((text, index) => {
+  return texts.sort((a, b) => Math.random() - 0.5).map<AnswerOption>((text, index) => {
     return {
       id: (Math.random() * 100).toString(),
       optionText: text,

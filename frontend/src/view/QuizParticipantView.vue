@@ -70,6 +70,7 @@ const handleShowNewQuestionMessage = (message: QuizShowNewQuestionMessage) => {
 
   answers.value = message.answers;
 
+  userAnswerComponentRef.value?.reset();
   userAnswerComponentRef.value?.updateOptions(message.answers);
 }
 

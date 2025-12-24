@@ -6,6 +6,10 @@ export interface QuizInitializationMessage extends QuizMessage {
   type: "INIT_MESSAGE",
 
   title: string;
+
+  currentRound: number;
+  maxRounds: number;
+
   question: Question,
   answers: AnswerOption[],
   ratingItems: RatingItem[],
@@ -20,17 +24,24 @@ export interface QuizInitializationMessage extends QuizMessage {
 
 export interface QuizShowNewQuestionMessage extends QuizMessage {
   type: "NEW_QUESTION",
+
   question: Question,
   answers: AnswerOption[],
-  questionId: string
+
+  questionId: string,
   nextQuestionId?: string
 }
 
 export interface QuizRoundMessage extends QuizMessage {
   type: "START_ROUND" | "STOP_ROUND",
   questionId: string,
+
   imageAlternativeId?: string,
   textAlternative?: string,
+
+  nextRound: number,
+  gameFinished: boolean,
+
   duration: number
 }
 

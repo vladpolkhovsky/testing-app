@@ -1,29 +1,39 @@
 <script setup lang="ts">
 import type {AnswerOption} from "@/model/AnswerOption.ts";
 import {ref} from "vue";
+import {CheckCheck, CircleCheckBig, CircleX} from "lucide-vue-next";
 
 const answerOptions = ref<AnswerOption[]>();
 
-const updateAnswerOptions = (options: AnswerOption[]) => {
-  answerOptions.value = options;
-}
+const isShowOnlyCorrect = ref(false);
 
 const showOnlyCorrect = () => {
-  answerOptions.value = answerOptions.value?.filter(t => t.correct)
+  isShowOnlyCorrect.value = true;
 }
 
+const reset = () => {
+  isShowOnlyCorrect.value = false;
+}
+
+defineProps<{
+  options: AnswerOption[];
+}>();
+
 defineExpose({
-  updateAnswerOptions,
-  showOnlyCorrect
-});
+  showOnlyCorrect,
+  reset
+})
 
 </script>
 
 <template>
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-3 gap-y-5 text-2xl p-3">
-    <div class="item flex flex-row justify-start items-center border-b-3 border-dashed mx-3 pb-2" v-for="option in answerOptions">
-      <div class="mr-5 text-5xl self-end font-italic">{{option.optionVariant}}.</div>
-      <div class="text-3xl self-end">{{option.optionText}}</div>
+    <div class="w-full flex gap-3 items-center" v-for="option in options">
+      <CircleCheckBig :size="32" class="text-green-500" v-if="isShowOnlyCorrect && option.correct" />
+      <div class="w-full flex flex-row justify-start items-center border-b-3 border-dashed mx-3 pb-2" >
+        <div class="p-3 pr-0 mr-5 text-2xl self-end">{{ option.optionVariant }}.</div>
+        <div class="pl-0 p-3 text-xl xl:text-xl self-end text-start">{{ option.optionText }}</div>
+      </div>
     </div>
   </div>
 </template>

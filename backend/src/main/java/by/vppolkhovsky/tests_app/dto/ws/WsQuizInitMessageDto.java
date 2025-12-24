@@ -19,4 +19,6 @@ public class WsQuizInitMessageDto {
     private Boolean gameStarted;
     private Boolean roundStarted;
     private Boolean gameFinished;
+    private Integer currentRound;
+    private Integer maxRounds;
 }

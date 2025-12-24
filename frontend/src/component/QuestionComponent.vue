@@ -1,23 +1,17 @@
 <script setup lang="ts">
 import type {Question} from "@/model/Question.ts";
-import {ref} from "vue";
 
-const question = ref<Question>();
-
-const updateQuestion = (newQuestion: Question) => {
-  question.value = newQuestion
-};
-
-defineExpose({
-  updateQuestion
-})
+const props = defineProps<Question>();
 </script>
 
 <template>
-  <h1 class="font-medium text-2xl px-3 mt-3">Вопрос:</h1>
-  <div class="flex gap-8 justify-between m-3">
-    <p class="text-4xl text-justify">{{ question?.text }}</p>
-    <img class="rounded-xl max-h-128 max-w-128" v-if="question?.imageId" :src="'/api/quiz/image/'+question.imageId">
+  <div class="border-3 rounded-xl border-dashed">
+    <h1 class="font-medium text-xl md:text-3xl px-3 mt-3 text-center">Вопрос</h1>
+    <div class="flex gap-8 justify-between m-3 p-3">
+      <p class="text-xl md:text-4xl text-justify">{{ text }}</p>
+      <img class="rounded-xl max-h-64 max-w-64 md:max-h-96 xl:max-h-128 md:max-w-128" v-if="imageId"
+           :src="`/api/quiz/image/${imageId}`" alt="quiz image"/>
+    </div>
   </div>
 </template>
 

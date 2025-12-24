@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class QuizService {
 
     private static int TIME_START_DELEY = 1;
-    private static int ROUND_TIME = 25;
+    private static int ROUND_TIME = 20;
     private static int DISCUSSION_DELAY = 10;
 
     private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
@@ -53,6 +54,7 @@ public class QuizService {
 
         QuestionDto nextQuestion = null;
         if (context.getCurrentQuestionId() == null) {
+            context.setCurrentRound(1);
             nextQuestion = context.getQuiz().getQuestions().getFirst();
         } else {
             QuestionDto currentQuestion = context.getQuiz().getQuestions().stream()
@@ -63,12 +65,14 @@ public class QuizService {
 
             if (currentQuestionIndex + 1 < context.getQuiz().getQuestions().size()) {
                 nextQuestion = context.getQuiz().getQuestions().get(currentQuestionIndex + 1);
+                context.setCurrentRound(currentQuestionIndex + 2);
             }
         }
 
         if (nextQuestion == null) {
             context.setGameFinished(true);
             context.setRoundStarted(false);
+            context.setCurrentRound(context.getMaxRounds());
             notifySilent(contextId);
             return;
         }
@@ -78,10 +82,10 @@ public class QuizService {
         notifyShowMessageMessage(context);
 
         CompletableFuture.runAsync(() -> {}, CompletableFuture.delayedExecutor(TIME_START_DELEY, TimeUnit.SECONDS, executor))
-            .thenRunAsync(() -> notify(contextId, WsStartStopRoundMessageDto.start(context.getCurrentQuestionId(), ROUND_TIME)), executor)
+            .thenRunAsync(() -> notify(contextId, WsStartStopRoundMessageDto.start(context.getCurrentQuestionId(), ROUND_TIME, context.getCurrentRound())), executor)
             .thenRunAsync(() -> {}, CompletableFuture.delayedExecutor(ROUND_TIME, TimeUnit.SECONDS, executor))
             .thenRunAsync(() -> {
-                WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId());
+                WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId(), context.getCurrentRound() + 1, context.getCurrentRound() + 1 > context.getMaxRounds());
 
                 context.getCurrentQuestion().ifPresent(q -> {
                     stopMessage.setTextAlternative(q.getTextAlternative());
@@ -122,17 +126,15 @@ public class QuizService {
         List<LocalDateTime> correctAnswerTimes = correctAnswers.stream()
             .map(QuizContext.QuestionAnswer::getTime)
             .sorted()
-            .distinct()
             .toList();
-
-        Random random = new Random();
 
         correctAnswers.forEach(a -> {
             Optional.ofNullable(context.getUserRating().get(a.getUserId())).ifPresent((rating) -> {
                 QuestionDto questionDto = question.orElseThrow();
                 int index = correctAnswerTimes.indexOf(a.getTime());
-                double multiplier = (correctAnswerTimes.size() - index * 1.0) / correctAnswerTimes.size();
-                rating.setRating(rating.getRating() + Math.round((float) (questionDto.getPrice() * multiplier) + random.nextInt(0, 15 + 1)));
+                long fromFirstCorrect = Duration.between(correctAnswerTimes.getFirst(), a.getTime()).toSeconds() + 2 + index;
+                double multiplier = 1 / Math.sqrt(fromFirstCorrect);
+                rating.setRating(rating.getRating() + Math.round((float) (questionDto.getPrice() * multiplier)));
             });
         });
 

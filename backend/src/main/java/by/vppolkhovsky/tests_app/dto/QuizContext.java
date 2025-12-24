@@ -21,6 +21,9 @@ public class QuizContext {
 
     private UUID currentQuestionId;
 
+    private Integer currentRound;
+    private Integer maxRounds;
+
     @Builder.Default
     private Boolean gameStarted = false;
     @Builder.Default
@@ -32,6 +35,13 @@ public class QuizContext {
         return quiz.getQuestions().stream()
             .filter(q -> Objects.equals(currentQuestionId, q.getId()))
             .findAny();
+    }
+
+    public Optional<Integer> getQuestionIndex() {
+        return getCurrentQuestion().map(questionDto -> {
+            int index = quiz.getQuestions().indexOf(questionDto);
+            return index > -1 ? index : null;
+        });
     }
 
     @Data

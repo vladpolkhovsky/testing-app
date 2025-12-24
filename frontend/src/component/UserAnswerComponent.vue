@@ -2,6 +2,7 @@
 import type {AnswerOption} from "@/model/AnswerOption.ts";
 import {inject, ref} from "vue";
 import type {SocketService} from "@/service/SocketService.ts";
+import {CircleCheckBig, CircleX, CheckCheck} from "lucide-vue-next"
 
 const props = defineProps<{
   options?: AnswerOption[]
@@ -17,16 +18,24 @@ const updateOptions = (options: AnswerOption[]) => {
 }
 
 const showOnlyCorrect = () => {
-  answerOptions.value = answerOptions.value?.filter(t => t.correct)
+  isShowOnlyCorrect.value = true;
+}
+
+const reset = () => {
+  isShowOnlyCorrect.value = false;
+  selectedId.value = undefined;
 }
 
 defineExpose({
   updateOptions,
-  showOnlyCorrect
+  showOnlyCorrect,
+  reset
 });
+
 
 const selectedId = ref<string>();
 const isSent = ref<boolean>(false);
+const isShowOnlyCorrect = ref<boolean>(false);
 
 const sent = (id: string) => {
   isSent.value = true;
@@ -37,10 +46,12 @@ const select = (id: string) => {
   if (isSent.value) {
     return;
   }
+
   if (selectedId.value == id) {
     selectedId.value = undefined;
     return;
   }
+
   selectedId.value = id;
 }
 
@@ -49,12 +60,16 @@ const select = (id: string) => {
 <template>
   <div class="flex flex-col gap-5">
     <div class="grid grid-cols-1 gap-2 gap-y-5 text-md xl:text-2xl p-3">
-      <div :class="['flex flex-row justify-start items-center border-b-3 border-dashed mx-3 pb-2', {
-      'selected': option.id == selectedId,
-      'item': !isSent
-    }]" @click="select(option.id)" v-for="option in answerOptions">
-        <div class="p-3 pr-0 mr-5 text-2xl self-end">{{ option.optionVariant }}.</div>
-        <div class="pl-0 p-3 text-xl xl:text-xl self-end text-start">{{ option.optionText }}</div>
+      <div class="w-full flex gap-3 items-center" @click="select(option.id)" v-for="option in answerOptions">
+        <CircleX :size="32" class="text-red-700" v-if="selectedId == option.id && isSent && isShowOnlyCorrect && !option.correct" />
+        <CircleCheckBig :size="32" class="text-green-500" v-if="selectedId == option.id && isSent && isShowOnlyCorrect && option.correct" />
+        <CircleCheckBig :size="32" class="text-amber-500" v-if="selectedId == option.id && isSent && !isShowOnlyCorrect" />
+        <CircleCheckBig :size="32" v-if="selectedId == option.id && !isSent" />
+        <CheckCheck :size="32" v-if="selectedId != option.id && isShowOnlyCorrect && option.correct" />
+        <div class="w-full flex flex-row justify-start items-center border-b-3 border-dashed mx-3 pb-2" >
+          <div class="p-3 pr-0 mr-5 text-2xl self-end">{{ option.optionVariant }}.</div>
+          <div class="pl-0 p-3 text-xl xl:text-xl self-end text-start">{{ option.optionText }}</div>
+        </div>
       </div>
     </div>
     <button v-if="selectedId" :class="['px-8 text-md xl:text-2xl py-3 text-white rounded-full  backdrop-blur', {

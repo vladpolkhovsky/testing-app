@@ -23,6 +23,8 @@ public class QuizContextHolder {
     public QuizContext createContext(String contextId, QuizDto quizDto) {
         quizContexts.put(contextId, QuizContext.builder()
             .id(contextId)
+            .currentRound(1)
+            .maxRounds(quizDto.getQuestions().size())
             .quiz(quizDto)
             .build());
 

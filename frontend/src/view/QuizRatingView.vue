@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import {ref, onMounted, inject} from 'vue'
+import {inject, onMounted, ref} from 'vue'
 import {getRandomRating, type RatingItem} from "@/model/RatingItem.ts"
 import LiquidGlass from "@/component/LiquidGlass.vue";
 import {SocketService} from "@/service/SocketService.ts";
-import {it} from "node:test";
 import gsap from "gsap";
 
 interface RankedItem {
@@ -19,13 +18,11 @@ const props = defineProps<{
   items?: RatingItem[]
 }>()
 
-const container = ref<HTMLElement>();
 const rankedItems = ref<RankedItem[]>([]);
 const socketService = inject<SocketService>("SocketService");
 
-// Инициализация
 const initializeItems = () => {
-  const sorted = [...(props.items ?? [])]
+  rankedItems.value = [...(props.items ?? [])]
       .sort((a, b) => b.rating - a.rating)
       .map((item, index) => ({
         id: item.userId,
@@ -34,16 +31,14 @@ const initializeItems = () => {
         diff: 0,
         item
       }));
-
-  rankedItems.value = sorted;
 }
 
 const updateModel = (newItems: RatingItem[]) => {
-  console.log(newItems);
+  console.log('new items', newItems);
 
   newItems.forEach((item) => {
     const find = rankedItems.value.find(value => value.item.userId === item.userId);
-    console.log(find);
+    console.log('already found in rating ', find);
     if (!find) {
       rankedItems.value.push({
         diff: 0,
@@ -56,7 +51,7 @@ const updateModel = (newItems: RatingItem[]) => {
     }
   })
 
-  console.log(rankedItems.value);
+  console.log('updated rating items', rankedItems.value);
 
   let hasAnyDiff = false;
 
@@ -65,41 +60,45 @@ const updateModel = (newItems: RatingItem[]) => {
 
     if (newItem) {
       const diff = newItem.rating - ranked.item.rating
-      if (diff != 0) {
 
+      if (diff != 0) {
         hasAnyDiff = true;
 
         gsap.to(ranked, {
           diff: diff,
           duration: 5,
           ease: "power4.inOut"
-        });
-        gsap.to(ranked.item, {
-          rating: ranked.item.rating + diff,
-          delay: 7,
-          duration: 3,
-          ease: "power4.inOut"
-        });
-        gsap.to(ranked, {
-          diff: 0,
-          delay: 7,
-          duration: 3,
-          ease: "power4.inOut"
+        }).then(() => {
+          gsap.to(ranked.item, {
+            rating: ranked.item.rating + diff,
+            delay: 2,
+            duration: 3,
+            ease: "power4.inOut"
+          });
+          gsap.to(ranked, {
+            diff: 0,
+            delay: 2,
+            duration: 3,
+            ease: "power4.inOut"
+          });
         });
       }
-      return ranked
+      return ranked;
     }
 
-    return ranked
-  })
+    return ranked;
+  });
 
   const update = () => {
     updated.sort((a, b) => b.item.rating - a.item.rating);
+
     updated.forEach((item, index) => {
       item.index = index + 1
       item.position = index
     });
-    rankedItems.value = updated
+
+    rankedItems.value = updated;
+    emits("round-update-ended");
   }
 
   if (hasAnyDiff) {
@@ -115,6 +114,10 @@ const updateModel = (newItems: RatingItem[]) => {
 }
 
 const addUser = (item: RatingItem) => {
+  if (rankedItems.value.find(r => r.id === item.userId)) {
+    return;
+  }
+
   const newRankedItem: RankedItem = {
     id: item.userId,
     index: rankedItems.value.length + 1,
@@ -138,16 +141,11 @@ const formatNumber = (value: number, showSign = false) => {
 
   if (value > 0 && showSign) return `+${formatted}`
   if (value < 0) return `-${formatted}`
+
   return formatted
 }
 
-const getDiffColor = (diff: number) => {
-  if (diff > 0) return 'text-emerald-600 bg-emerald-50 border-emerald-200'
-  if (diff < 0) return 'text-rose-600 bg-rose-50 border-rose-200'
-  return 'text-gray-600 bg-gray-50 border-gray-200'
-}
-
-const showStartGameButtonRef = ref<boolean>(true)
+const showStartGameButtonRef = ref<boolean>(false)
 
 const showStartGameButton = () => {
   showStartGameButtonRef.value = true;
@@ -169,6 +167,8 @@ defineExpose({
   clearUsers,
 });
 
+const emits = defineEmits(["round-update-ended"]);
+
 onMounted(() => {
   initializeItems()
 });
@@ -176,7 +176,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <LiquidGlass class="rounded-xl">
+  <LiquidGlass class="rounded-xl w-full">
     <div ref="container" class="rating-container">
 
       <div class="flex w-full justify-between items-center p-3" v-if="showStartGameButtonRef">
@@ -206,11 +206,11 @@ onMounted(() => {
           <div class="flex items-center justify-between px-5 py-3">
             <div class="flex items-center space-x-4">
               <div class="flex flex-col items-center">
-                <span class="w-8 text-2xl font-bold text-gray-800">{{ item.index }}.</span>
+                <span class="w-8 text-2xl font-bold text-gray-800 tektur-badge">{{ item.index }}.</span>
               </div>
               <div class="flex items-center space-x-3">
                 <div>
-                  <h3 class="text-2xl font-semibold text-gray-900">{{ item.item.username }}</h3>
+                  <h3 class="text-2xl font-semibold text-gray-900 montserrat-person">{{ item.item.username }}</h3>
                 </div>
               </div>
             </div>
@@ -219,15 +219,14 @@ onMounted(() => {
               <div class="flex items-center space-x-6">
                 <div class="text-right">
                   <div class="text-2xl font-bold text-gray-900">
-                    <span class="iconify" data-icon="material-symbols:arrow-shape-up-stack-2"
-                          data-inline="false"></span> {{ formatNumber(item.item.rating) }}
+                    <span class="iconify tektur-badge" data-inline="false">{{ formatNumber(item.item.rating) }}</span>
                   </div>
-                  <div class="text-sm text-gray-500">Рейтинг</div>
+                  <div class="text-md text-gray-500 tektur-badge">Рейтинг</div>
                 </div>
               </div>
               <div class="flex items-center space-x-6" v-if="item.diff != 0">
                 <div class="text-start">
-                  <div :class="[ 'text-2xl font-bold', {
+                  <div :class="[ 'text-2xl font-bold tektur-badge', {
                     'text-green-900': item.diff > 0,
                     'text-red-900': item.diff < 0
                     }]">
@@ -245,6 +244,26 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Pangolin&family=Tektur:wght@400..900&display=swap');
+
+.tektur-badge {
+  font-family: "Tektur", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: bold;
+  font-variation-settings: "wdth" 100;
+}
+
+.pangolin-regular {
+  font-family: "Pangolin", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.qr-position {
+  top: 25px;
+  right: 25px;
+}
+
 @reference "@/main.css"
 
 .rating-container {
@@ -255,4 +274,11 @@ onMounted(() => {
   @apply relative rounded-xl shadow-sm border border-gray-200
   transition-all duration-700 ease-in-out overflow-hidden;
 }
+
+.montserrat-person {
+               font-family: "Montserrat", sans-serif;
+               font-optical-sizing: auto;
+               font-weight: bold;
+               font-style: normal;
+             }
 </style>
