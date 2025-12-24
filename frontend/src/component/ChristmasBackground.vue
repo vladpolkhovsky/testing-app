@@ -5,27 +5,25 @@ import { ref, onMounted, onUnmounted } from 'vue'
 const CONFIG = {
   // Trees
   TREE_COUNT: 15,
-  TREE_MIN_SIZE: 30,
+  TREE_MIN_SIZE: 45,
   TREE_MAX_SIZE: 60,
-  TREE_MIN_SPEED: 0.25,
-  TREE_MAX_SPEED: 1,
+  TREE_MIN_SPEED: 0.75,
+  TREE_MAX_SPEED: 2.5,
   TREE_WIND: 0.3,
-  TREE_SWING: 0.5,
   TREE_OPACITY: 0.9,
 
   // Tree Swing Animation
   TREE_SWING_SPEED_MIN: 0.25,
-  TREE_SWING_SPEED_MAX: 1,
+  TREE_SWING_SPEED_MAX: 0.75,
   TREE_SWING_ANGLE_MAX: 30,
 
   // Snowflakes
   SNOWFLAKE_COUNT: 150,
   SNOWFLAKE_MIN_SIZE: 1,
   SNOWFLAKE_MAX_SIZE: 8,
-  SNOWFLAKE_MIN_SPEED: 0.5,
+  SNOWFLAKE_MIN_SPEED: 0.25,
   SNOWFLAKE_MAX_SPEED: 2.5,
   SNOWFLAKE_WIND: 0.8,
-  SNOWFLAKE_SWING: 1.2,
   SNOWFLAKE_OPACITY: 0.7,
 
   // Colors
@@ -124,8 +122,8 @@ const createTreeParticle = (canvasWidth: number, canvasHeight: number): TreePart
 
   return {
     type: 'tree',
-    x: random(0, canvasWidth),
-    y: random(0, canvasHeight),
+    x: random(-CONFIG.TREE_MAX_SIZE, canvasWidth),
+    y: random(-CONFIG.TREE_MAX_SIZE, canvasHeight),
     r: size,
     velX: CONFIG.TREE_WIND * random(-0.5, 0.5),
     velY: random(CONFIG.TREE_MIN_SPEED, CONFIG.TREE_MAX_SPEED),
@@ -280,7 +278,7 @@ const animate = () => {
           : CONFIG.TREE_WIND
 
       treeParticle.swing += 0.03
-      treeParticle.x += Math.cos(treeParticle.swing) * CONFIG.TREE_SWING * treeParticle.opacity + treeParticle.velX * 0.5
+      treeParticle.x += treeParticle.velX * 0.5
       treeParticle.y += treeParticle.velY * 0.5
 
       // Update swing rotation (pendulum motion)
@@ -312,7 +310,7 @@ const animate = () => {
           : CONFIG.SNOWFLAKE_WIND
 
       snowflakeParticle.swing += 0.03
-      snowflakeParticle.x += Math.cos(snowflakeParticle.swing) * CONFIG.SNOWFLAKE_SWING * snowflakeParticle.opacity + snowflakeParticle.velX * 0.5 + snowflakeParticle.drift
+      snowflakeParticle.x +=  snowflakeParticle.velX * 0.5 + snowflakeParticle.drift
       snowflakeParticle.y += snowflakeParticle.velY * 0.5
       snowflakeParticle.rotation += snowflakeParticle.rotationSpeed
     }
