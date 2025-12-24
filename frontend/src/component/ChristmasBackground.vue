@@ -1,231 +1,431 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-interface Tree {
-  id: number
-  left: number
-  startTop: number
-  delay: number
-  duration: number
-  size: number
-  rotation: number
-  horizontalDrift: number
-  styleVariant: number
-  speed: number
+// ===================== CONFIGURATION =====================
+const CONFIG = {
+  // Trees
+  TREE_COUNT: 15,
+  TREE_MIN_SIZE: 30,
+  TREE_MAX_SIZE: 60,
+  TREE_MIN_SPEED: 0.25,
+  TREE_MAX_SPEED: 1,
+  TREE_WIND: 0.3,
+  TREE_SWING: 0.5,
+  TREE_OPACITY: 0.9,
+
+  // Tree Swing Animation
+  TREE_SWING_SPEED_MIN: 0.25,
+  TREE_SWING_SPEED_MAX: 1,
+  TREE_SWING_ANGLE_MAX: 30,
+
+  // Snowflakes
+  SNOWFLAKE_COUNT: 150,
+  SNOWFLAKE_MIN_SIZE: 1,
+  SNOWFLAKE_MAX_SIZE: 8,
+  SNOWFLAKE_MIN_SPEED: 0.5,
+  SNOWFLAKE_MAX_SPEED: 2.5,
+  SNOWFLAKE_WIND: 0.8,
+  SNOWFLAKE_SWING: 1.2,
+  SNOWFLAKE_OPACITY: 0.7,
+
+  // Colors
+  TREE_COLORS: [
+    { dark: '#0c3b0c', medium: '#1e6b1e', light: '#2d8b2d' },
+    { dark: '#1a3c1a', medium: '#2d5a2d', light: '#3c693c' },
+    { dark: '#2c5545', medium: '#3d7a5c', light: '#4a9c73' }
+  ],
+  ORNAMENT_COLORS: ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#FFD700', '#9D4EDD']
 }
 
-const TREE_COUNT = 8
-const MAX_TREES = 20
-
-const trees = ref<Tree[]>([])
-let nextId = 0
+// ===================== CANVAS SETUP =====================
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+let ctx: CanvasRenderingContext2D | null = null
 let animationFrameId: number | null = null
-let lastTime = 0
+let treeImage: HTMLImageElement | null = null
 
-// Generate initial trees
-const generateInitialTrees = () => {
-  for (let i = 0; i < TREE_COUNT; i++) {
-    trees.value.push(createTree(true))
-  }
+const loadTreeImage = (): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = '/christmas_tree.png'
+  })
 }
 
-const createTree = (isInitial: boolean = false): Tree => {
-  return {
-    id: nextId++,
-    left: Math.random() * 95, // Leave 5% margin
-    startTop: isInitial ? Math.random() * -300 - 100 : -150,
-    delay: isInitial ? Math.random() * 3 : 0,
-    duration: Math.random() * 10 + 15,
-    size: Math.random() * 0.7 + 0.4,
-    rotation: Math.random() * 360,
-    horizontalDrift: (Math.random() - 0.5) * 1.5,
-    styleVariant: Math.floor(Math.random() * 3),
-    speed: Math.random() * 0.8 + 0.6
-  }
+// ===================== PARTICLE DEFINITIONS =====================
+interface BaseParticle {
+  x: number
+  y: number
+  r: number
+  velX: number
+  velY: number
+  swing: number
+  opacity: number
 }
 
-// Smooth animation using requestAnimationFrame
-const animateTrees = (timestamp: number) => {
-  if (!lastTime) lastTime = timestamp
-  const delta = timestamp - lastTime
+interface TreeParticle extends BaseParticle {
+  type: 'tree'
+  colorVariant: number
+  ornaments: { x: number; y: number; color: string; size: number }[]
+  lights: { x: number; y: number; color: string }[]
+  rotation: number
+  swingSpeed: number
+  swingAngle: number
+  swingDirection: number
+}
 
-  trees.value = trees.value.map(tree => {
-    const progress = delta / 1000
-    const rotationSpeed = tree.speed * 0.5
+interface SnowflakeParticle extends BaseParticle {
+  type: 'snowflake'
+  drift: number
+  rotation: number
+  rotationSpeed: number
+}
 
-    return {
-      ...tree,
-      startTop: tree.startTop + tree.speed * 5,
-      rotation: (tree.rotation + rotationSpeed) % 360,
-      left: tree.left + tree.horizontalDrift * progress
+type Particle = TreeParticle | SnowflakeParticle
+
+const particles = ref<Particle[]>([])
+
+// ===================== UTILITY FUNCTIONS =====================
+const random = (min: number, max: number): number => {
+  return Math.random() * (max - min) + min
+}
+
+const getRGB = (hex: string): string => {
+  if (hex.indexOf('#') === 0) {
+    if (hex.length === 7) {
+      const r = parseInt(hex.substring(1, 3), 16)
+      const g = parseInt(hex.substring(3, 5), 16)
+      const b = parseInt(hex.substring(5, 7), 16)
+      return `${r},${g},${b}`
     }
-  }).filter(tree => {
-    // Remove trees that are out of view
-    return tree.startTop < window.innerHeight + 200
+  }
+  return '255,255,255'
+}
+
+// ===================== PARTICLE CREATION =====================
+const createTreeParticle = (canvasWidth: number, canvasHeight: number): TreeParticle => {
+  const colorVariant = Math.floor(Math.random() * CONFIG.TREE_COLORS.length)
+  const size = random(CONFIG.TREE_MIN_SIZE, CONFIG.TREE_MAX_SIZE)
+
+  // Create ornaments for this tree
+  const ornaments = Array.from({ length: 8 }, (_, i) => ({
+    x: random(-size * 0.6, size * 0.6),
+    y: random(-size * 0.8, size * 0.4),
+    color: CONFIG.ORNAMENT_COLORS[Math.floor(Math.random() * CONFIG.ORNAMENT_COLORS.length)] || '#FF6B6B',
+    size: random(2, 4)
+  }))
+
+  // Create lights for this tree
+  const lights = Array.from({ length: 6 }, (_, i) => ({
+    x: random(-size * 0.5, size * 0.5),
+    y: random(-size * 0.6, size * 0.2),
+    color: ['#FF0000', '#00FF00', '#FFFF00', '#00FFFF', '#FF00FF', '#FFA500'][i] || '#FF0000'
+  }))
+
+  return {
+    type: 'tree',
+    x: random(0, canvasWidth),
+    y: random(0, canvasHeight),
+    r: size,
+    velX: CONFIG.TREE_WIND * random(-0.5, 0.5),
+    velY: random(CONFIG.TREE_MIN_SPEED, CONFIG.TREE_MAX_SPEED),
+    swing: random(0, 2 * Math.PI),
+    opacity: CONFIG.TREE_OPACITY * random(0.8, 1),
+    colorVariant,
+    ornaments,
+    lights,
+    rotation: random(-CONFIG.TREE_SWING_ANGLE_MAX, CONFIG.TREE_SWING_ANGLE_MAX),
+    swingSpeed: random(CONFIG.TREE_SWING_SPEED_MIN, CONFIG.TREE_SWING_SPEED_MAX),
+    swingAngle: random(15, CONFIG.TREE_SWING_ANGLE_MAX),
+    swingDirection: Math.random() > 0.5 ? 1 : -1
+  }
+}
+
+const createSnowflakeParticle = (canvasWidth: number, canvasHeight: number): SnowflakeParticle => {
+  return {
+    type: 'snowflake',
+    x: random(0, canvasWidth),
+    y: random(0, canvasHeight),
+    r: random(CONFIG.SNOWFLAKE_MIN_SIZE, CONFIG.SNOWFLAKE_MAX_SIZE),
+    velX: CONFIG.SNOWFLAKE_WIND * random(-0.3, 0.3),
+    velY: random(CONFIG.SNOWFLAKE_MIN_SPEED, CONFIG.SNOWFLAKE_MAX_SPEED),
+    swing: random(0, 2 * Math.PI),
+    opacity: CONFIG.SNOWFLAKE_OPACITY * random(0.5, 1),
+    drift: random(-0.2, 0.2),
+    rotation: random(0, 360),
+    rotationSpeed: random(-1, 1)
+  }
+}
+
+// ===================== DRAWING FUNCTIONS =====================
+const drawTree = (particle: TreeParticle) => {
+  if (!ctx || !treeImage) return
+
+  // Save context state
+  ctx.save()
+
+  // Translate to tree position
+  ctx.translate(particle.x, particle.y)
+
+  // Apply swing rotation
+  ctx.rotate(particle.rotation * Math.PI / 180)
+
+  // Apply opacity
+  ctx.globalAlpha = particle.opacity
+
+  // Draw the tree image, scaled to size
+  const imageHeight = particle.r * 3
+  const imageWidth = (treeImage.width / treeImage.height) * imageHeight
+  ctx.drawImage(treeImage, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
+
+  // Restore context
+  ctx.restore()
+}
+
+const drawSnowflake = (particle: SnowflakeParticle) => {
+  if (!ctx) return
+
+  ctx.save()
+  ctx.translate(particle.x, particle.y)
+  ctx.rotate(particle.rotation * Math.PI / 180)
+  ctx.globalAlpha = particle.opacity
+
+  // Complex snowflake design
+  const branches = 6
+  for (let i = 0; i < branches; i++) {
+    const angle = (i * 360 / branches) * Math.PI / 180
+
+    // Main branch
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(Math.cos(angle) * particle.r * 1.5, Math.sin(angle) * particle.r * 1.5)
+    ctx.strokeStyle = `rgba(${getRGB('#FFFFFF')},${particle.opacity})`
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    // Side branches
+    for (let j = 1; j <= 2; j++) {
+      const pos = particle.r * 0.6 * j
+      const sideAngle = angle + 45 * Math.PI / 180
+      const sideAngle2 = angle - 45 * Math.PI / 180
+
+      ctx.beginPath()
+      ctx.moveTo(Math.cos(angle) * pos, Math.sin(angle) * pos)
+      ctx.lineTo(Math.cos(sideAngle) * particle.r * 0.4 + Math.cos(angle) * pos,
+          Math.sin(sideAngle) * particle.r * 0.4 + Math.sin(angle) * pos)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(Math.cos(angle) * pos, Math.sin(angle) * pos)
+      ctx.lineTo(Math.cos(sideAngle2) * particle.r * 0.4 + Math.cos(angle) * pos,
+          Math.sin(sideAngle2) * particle.r * 0.4 + Math.sin(angle) * pos)
+      ctx.stroke()
+    }
+  }
+
+  // Center dot
+  ctx.beginPath()
+  ctx.arc(0, 0, particle.r * 0.3, 0, Math.PI * 2)
+  ctx.fillStyle = `rgba(${getRGB('#FFFFFF')},${particle.opacity})`
+  ctx.fill()
+
+  ctx.restore()
+}
+
+// ===================== ANIMATION LOOP =====================
+const initParticles = () => {
+  if (!canvasRef.value) return
+
+  const canvas = canvasRef.value
+  ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const { width, height } = canvas.getBoundingClientRect()
+  canvas.width = width
+  canvas.height = height
+
+  // Clear existing particles
+  particles.value = []
+
+  // Create trees
+  for (let i = 0; i < CONFIG.TREE_COUNT; i++) {
+    particles.value.push(createTreeParticle(width, height))
+  }
+
+  // Create snowflakes
+  for (let i = 0; i < CONFIG.SNOWFLAKE_COUNT; i++) {
+    particles.value.push(createSnowflakeParticle(width, height))
+  }
+}
+
+const animate = () => {
+  if (!canvasRef.value || !ctx) return
+
+  const canvas = canvasRef.value
+  const width = canvas.width
+  const height = canvas.height
+
+  // Clear canvas
+  ctx.clearRect(0, 0, width, height)
+
+  // Update and draw each particle
+  particles.value.forEach(particle => {
+    // Update physics based on particle type
+    if (particle.type === 'tree') {
+      const treeParticle = particle as TreeParticle
+
+      // Tree-specific physics
+      treeParticle.velX = Math.abs(treeParticle.velX) < Math.abs(CONFIG.TREE_WIND)
+          ? treeParticle.velX + CONFIG.TREE_WIND / 20
+          : CONFIG.TREE_WIND
+
+      treeParticle.swing += 0.03
+      treeParticle.x += Math.cos(treeParticle.swing) * CONFIG.TREE_SWING * treeParticle.opacity + treeParticle.velX * 0.5
+      treeParticle.y += treeParticle.velY * 0.5
+
+      // Update swing rotation (pendulum motion)
+      treeParticle.rotation += treeParticle.swingSpeed * treeParticle.swingDirection
+
+      // Reverse direction when reaching max angle
+      if (Math.abs(treeParticle.rotation) >= treeParticle.swingAngle) {
+        treeParticle.swingDirection *= -1
+        // Clamp the rotation to prevent overshoot
+        treeParticle.rotation = Math.max(-treeParticle.swingAngle,
+            Math.min(treeParticle.swingAngle, treeParticle.rotation))
+      }
+
+      // Add a little bounce effect at the extremes
+      if (Math.abs(treeParticle.rotation) > treeParticle.swingAngle * 0.8) {
+        treeParticle.swingSpeed *= 0.98
+      } else {
+        treeParticle.swingSpeed = Math.min(
+            treeParticle.swingSpeed * 1.02,
+            random(CONFIG.TREE_SWING_SPEED_MIN, CONFIG.TREE_SWING_SPEED_MAX)
+        )
+      }
+
+    } else {
+      // Snowflake-specific physics
+      const snowflakeParticle = particle as SnowflakeParticle
+      snowflakeParticle.velX = Math.abs(snowflakeParticle.velX) < Math.abs(CONFIG.SNOWFLAKE_WIND)
+          ? snowflakeParticle.velX + CONFIG.SNOWFLAKE_WIND / 20
+          : CONFIG.SNOWFLAKE_WIND
+
+      snowflakeParticle.swing += 0.03
+      snowflakeParticle.x += Math.cos(snowflakeParticle.swing) * CONFIG.SNOWFLAKE_SWING * snowflakeParticle.opacity + snowflakeParticle.velX * 0.5 + snowflakeParticle.drift
+      snowflakeParticle.y += snowflakeParticle.velY * 0.5
+      snowflakeParticle.rotation += snowflakeParticle.rotationSpeed
+    }
+
+    // Check boundaries and reset if needed
+    const margin = particle.r * 2
+    if (particle.x > width + margin || particle.x < -margin ||
+        particle.y > height + margin || particle.y < -margin) {
+      resetParticle(particle, width, height)
+    }
+
+    // Draw the particle
+    if (particle.type === 'tree') {
+      drawTree(particle as TreeParticle)
+    } else {
+      drawSnowflake(particle as SnowflakeParticle)
+    }
   })
 
-  lastTime = timestamp
-  animationFrameId = requestAnimationFrame(animateTrees)
+  // Continue animation
+  animationFrameId = requestAnimationFrame(animate)
 }
 
-// Add new trees periodically
-let addInterval: NodeJS.Timeout
+const resetParticle = (particle: Particle, width: number, height: number) => {
+  const prevR = particle.r
 
+  if (particle.type === 'tree') {
+    const treeParticle = particle as TreeParticle
+    treeParticle.r = random(CONFIG.TREE_MIN_SIZE, CONFIG.TREE_MAX_SIZE)
+  } else {
+    const snowflakeParticle = particle as SnowflakeParticle
+    snowflakeParticle.r = random(CONFIG.SNOWFLAKE_MIN_SIZE, CONFIG.SNOWFLAKE_MAX_SIZE)
+  }
+
+  if (particle.x > width + prevR) {
+    particle.x = -particle.r
+    particle.y = random(0, height)
+  } else if (particle.x < -prevR) {
+    particle.x = width + particle.r
+    particle.y = random(0, height)
+  } else {
+    particle.x = random(0, width)
+    particle.y = -particle.r
+  }
+
+  if (particle.type === 'tree') {
+    const treeParticle = particle as TreeParticle
+    treeParticle.velX = CONFIG.TREE_WIND * random(-0.5, 0.5)
+    treeParticle.velY = random(CONFIG.TREE_MIN_SPEED, CONFIG.TREE_MAX_SPEED)
+    treeParticle.swing = random(0, 2 * Math.PI)
+    treeParticle.opacity = CONFIG.TREE_OPACITY * random(0.8, 1)
+    treeParticle.rotation = random(-CONFIG.TREE_SWING_ANGLE_MAX, CONFIG.TREE_SWING_ANGLE_MAX)
+    treeParticle.swingSpeed = random(CONFIG.TREE_SWING_SPEED_MIN, CONFIG.TREE_SWING_SPEED_MAX)
+    treeParticle.swingAngle = random(15, CONFIG.TREE_SWING_ANGLE_MAX)
+    treeParticle.swingDirection = Math.random() > 0.5 ? 1 : -1
+  } else {
+    const snowflakeParticle = particle as SnowflakeParticle
+    snowflakeParticle.velX = CONFIG.SNOWFLAKE_WIND * random(-0.3, 0.3)
+    snowflakeParticle.velY = random(CONFIG.SNOWFLAKE_MIN_SPEED, CONFIG.SNOWFLAKE_MAX_SPEED)
+    snowflakeParticle.swing = random(0, 2 * Math.PI)
+    snowflakeParticle.opacity = CONFIG.SNOWFLAKE_OPACITY * random(0.5, 1)
+    snowflakeParticle.rotationSpeed = random(-1, 1)
+    snowflakeParticle.drift = random(-0.2, 0.2)
+  }
+}
+
+// ===================== LIFECYCLE =====================
 onMounted(() => {
-  generateInitialTrees()
-  animationFrameId = requestAnimationFrame(animateTrees)
+  loadTreeImage().then(img => {
+    treeImage = img
+    initParticles()
+    animationFrameId = requestAnimationFrame(animate)
+  }).catch(err => {
+    console.error('Failed to load tree image:', err)
+  })
 
-  addInterval = setInterval(() => {
-    if (trees.value.length < MAX_TREES) {
-      trees.value.push(createTree(false))
+  // Handle window resize
+  const handleResize = () => {
+    if (!canvasRef.value) return
+    const canvas = canvasRef.value
+    const { width, height } = canvas.getBoundingClientRect()
+    canvas.width = width
+    canvas.height = height
+
+    // Adjust particles for new canvas size
+    particles.value.forEach(particle => {
+      particle.x = (particle.x / (canvas.width || 1)) * width
+      particle.y = (particle.y / (canvas.height || 1)) * height
+    })
+  }
+
+  window.addEventListener('resize', handleResize)
+
+  onUnmounted(() => {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId)
     }
-  }, 1500)
-})
-
-onUnmounted(() => {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId)
-  }
-  if (addInterval) {
-    clearInterval(addInterval)
-  }
+    window.removeEventListener('resize', handleResize)
+  })
 })
 </script>
 
 <template>
   <div class="christmas-background">
-    <!-- Background decorative elements -->
-    <div class="snowfall"></div>
+    <!-- Canvas for all animations -->
+    <canvas
+        ref="canvasRef"
+        class="animation-canvas"
+    />
+
+    <!-- Static background elements -->
     <div class="twinkles"></div>
-
-    <!-- SVG Filters (hidden but needed for effects) -->
-    <svg style="position: absolute; width: 0; height: 0; pointer-events: none;">
-      <defs>
-        <filter id="tree-glow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-        <filter id="ornament-glow">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-          <feOffset dx="0" dy="0" result="offsetblur"/>
-          <feFlood flood-color="white" flood-opacity="0.5"/>
-          <feComposite in2="offsetblur" operator="in"/>
-          <feMerge>
-            <feMergeNode/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-    </svg>
-
-    <!-- Trees -->
-    <div
-        v-for="tree in trees"
-        :key="tree.id"
-        class="tree-container"
-        :style="{
-        left: tree.left + '%',
-        top: tree.startTop + 'px',
-        '--delay': tree.delay + 's',
-        '--size': tree.size,
-        '--rotation': tree.rotation + 'deg',
-        opacity: Math.max(0.2, Math.min(1, 0.7 + tree.startTop / 500))
-      }"
-    >
-      <!-- Modern Christmas Tree SVG -->
-      <svg
-          viewBox="0 0 200 240"
-          class="tree-svg"
-          :style="{
-          filter: `drop-shadow(0 10px 20px rgba(0, 100, 0, 0.3))
-                   drop-shadow(0 0 ${10 * tree.size}px rgba(255, 255, 200, 0.2))`
-        }"
-      >
-        <!-- Trunk -->
-        <rect x="88" y="160" width="24" height="40" class="tree-trunk" />
-
-        <!-- Tree Body - 3D Pyramid Style -->
-        <g class="tree-body">
-          <!-- Bottom layer - dark -->
-          <polygon
-              points="100,40 30,170 170,170"
-              class="tree-layer tree-layer-1"
-          />
-
-          <!-- Middle layer - medium -->
-          <polygon
-              points="100,50 40,160 160,160"
-              class="tree-layer tree-layer-2"
-          />
-
-          <!-- Top layer - light -->
-          <polygon
-              points="100,60 50,150 150,150"
-              class="tree-layer tree-layer-3"
-          />
-        </g>
-
-        <!-- Decorative Lines -->
-        <g class="tree-lines">
-          <line x1="100" y1="65" x2="100" y2="90" class="tree-line" />
-          <line x1="95" y1="75" x2="70" y2="100" class="tree-line" />
-          <line x1="105" y1="75" x2="130" y2="100" class="tree-line" />
-          <line x1="90" y1="100" x2="50" y2="130" class="tree-line" />
-          <line x1="110" y1="100" x2="150" y2="130" class="tree-line" />
-        </g>
-
-        <!-- Star -->
-        <g class="tree-star">
-          <polygon
-              points="100,25 104,35 115,35 107,40 110,50 100,45 90,50 93,40 85,35 96,35"
-              class="star-inner"
-          />
-          <polygon
-              points="100,20 106,35 120,35 110,45 115,60 100,50 85,60 90,45 80,35 94,35"
-              class="star-outer"
-          />
-        </g>
-
-        <!-- Ornaments -->
-        <g class="ornaments">
-          <!-- Left side ornaments -->
-          <circle cx="75" cy="95" r="6" class="ornament ornament-1" />
-          <circle cx="60" cy="120" r="5" class="ornament ornament-2" />
-          <circle cx="85" cy="130" r="5" class="ornament ornament-3" />
-
-          <!-- Right side ornaments -->
-          <circle cx="125" cy="95" r="6" class="ornament ornament-4" />
-          <circle cx="140" cy="120" r="5" class="ornament ornament-5" />
-          <circle cx="115" cy="130" r="5" class="ornament ornament-6" />
-
-          <!-- Center ornaments -->
-          <circle cx="100" cy="80" r="7" class="ornament ornament-7" />
-          <circle cx="100" cy="115" r="6" class="ornament ornament-8" />
-        </g>
-
-        <!-- Lights -->
-        <g class="lights">
-          <circle cx="70" cy="80" r="3" class="light light-1" />
-          <circle cx="130" cy="80" r="3" class="light light-2" />
-          <circle cx="95" cy="100" r="3" class="light light-3" />
-          <circle cx="105" cy="105" r="3" class="light light-4" />
-          <circle cx="80" cy="120" r="3" class="light light-5" />
-          <circle cx="120" cy="125" r="3" class="light light-6" />
-        </g>
-
-        <!-- Snow on branches -->
-        <g class="snow">
-          <circle cx="65" cy="100" r="2" class="snow-flake" />
-          <circle cx="135" cy="110" r="2" class="snow-flake" />
-          <circle cx="100" cy="140" r="2" class="snow-flake" />
-          <circle cx="90" cy="90" r="1.5" class="snow-flake" />
-          <circle cx="110" cy="115" r="1.5" class="snow-flake" />
-        </g>
-      </svg>
-    </div>
+    <div class="gradient-overlay"></div>
   </div>
 </template>
 
@@ -241,188 +441,20 @@ onUnmounted(() => {
   #1a1035 30%,
   #2d1b69 70%,
   #4a2c92 100%);
-  pointer-events: none;
   overflow: hidden;
   z-index: -1;
 }
 
-.tree-container {
+.animation-canvas {
   position: absolute;
-  will-change: transform, opacity;
-  transition: opacity 0.3s ease;
-  transform: rotate(var(--rotation));
-  transform-origin: center;
-  animation: float 4s ease-in-out infinite;
-  animation-delay: var(--delay);
-}
-
-.tree-svg {
-  width: calc(80px * var(--size));
-  height: auto;
-  transition: transform 0.3s ease;
-}
-
-.tree-container:hover .tree-svg {
-  transform: scale(1.1);
-  filter: drop-shadow(0 0 30px rgba(255, 255, 200, 0.5)) !important;
-}
-
-/* Tree Styles */
-.tree-trunk {
-  fill: #8B4513;
-  stroke: #5D2906;
-  stroke-width: 2;
-}
-
-.tree-body {
-  filter: url(#tree-glow);
-}
-
-.tree-layer {
-  stroke: #2a5c2a;
-  stroke-width: 1.5;
-}
-
-.tree-layer-1 {
-  fill: #0c3b0c;
-  stroke: #1e4d1e;
-}
-
-.tree-layer-2 {
-  fill: #1e6b1e;
-  stroke: #2d7a2d;
-}
-
-.tree-layer-3 {
-  fill: #2d8b2d;
-  stroke: #3c9c3c;
-}
-
-.tree-lines .tree-line {
-  stroke: #a0522d;
-  stroke-width: 1;
-  opacity: 0.6;
-}
-
-/* Star */
-.tree-star {
-  animation: starPulse 2s ease-in-out infinite;
-  transform-origin: center;
-}
-
-.star-inner {
-  fill: #FFD700;
-  filter: drop-shadow(0 0 10px gold);
-}
-
-.star-outer {
-  fill: #FFEC8B;
-  opacity: 0.8;
-}
-
-/* Ornaments */
-.ornaments .ornament {
-  animation: ornamentFloat 3s ease-in-out infinite;
-  filter: url(#ornament-glow);
-}
-
-.ornament-1 { fill: #FF6B6B; animation-delay: 0s; }
-.ornament-2 { fill: #4ECDC4; animation-delay: 0.5s; }
-.ornament-3 { fill: #FFD166; animation-delay: 1s; }
-.ornament-4 { fill: #06D6A0; animation-delay: 1.5s; }
-.ornament-5 { fill: #118AB2; animation-delay: 2s; }
-.ornament-6 { fill: #EF476F; animation-delay: 2.5s; }
-.ornament-7 { fill: #FFD700; animation-delay: 0.2s; }
-.ornament-8 { fill: #9D4EDD; animation-delay: 0.7s; }
-
-/* Lights */
-.lights .light {
-  animation: lightTwinkle 1.5s ease-in-out infinite;
-  filter: drop-shadow(0 0 8px currentColor);
-}
-
-.light-1 { fill: #FF0000; animation-delay: 0s; }
-.light-2 { fill: #00FF00; animation-delay: 0.3s; }
-.light-3 { fill: #FFFF00; animation-delay: 0.6s; }
-.light-4 { fill: #00FFFF; animation-delay: 0.9s; }
-.light-5 { fill: #FF00FF; animation-delay: 1.2s; }
-.light-6 { fill: #FFA500; animation-delay: 1.5s; }
-
-/* Snow */
-.snow-flake {
-  fill: white;
-  animation: snowTwinkle 4s ease-in-out infinite;
-}
-
-/* Animations */
-@keyframes float {
-  0%, 100% {
-    transform: rotate(var(--rotation)) translateY(0);
-  }
-  50% {
-    transform: rotate(var(--rotation)) translateY(-20px);
-  }
-}
-
-@keyframes starPulse {
-  0%, 100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 10px gold);
-  }
-  50% {
-    transform: scale(1.2);
-    filter: drop-shadow(0 0 20px gold);
-  }
-}
-
-@keyframes ornamentFloat {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes lightTwinkle {
-  0%, 100% {
-    opacity: 0.7;
-    r: 3;
-  }
-  50% {
-    opacity: 1;
-    r: 4;
-  }
-}
-
-@keyframes snowTwinkle {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* Background effects */
-.snowfall {
-  position: absolute;
-  top: -100px;
+  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image:
-      radial-gradient(2px 2px at 20px 30px, #EEE 50%, transparent 50%),
-      radial-gradient(2px 2px at 40px 70px, #FFF 50%, transparent 50%),
-      radial-gradient(2px 2px at 60px 20px, #EEE 50%, transparent 50%),
-      radial-gradient(3px 3px at 90px 50px, #FFF 50%, transparent 50%),
-      radial-gradient(2px 2px at 130px 80px, #EEE 50%, transparent 50%),
-      radial-gradient(3px 3px at 160px 20px, #FFF 50%, transparent 50%);
-  background-size: 200px 200px;
-  animation: snowfallAnim 20s linear infinite;
-  opacity: 0.6;
+  pointer-events: none;
 }
 
+/* Static background twinkles */
 .twinkles {
   position: absolute;
   top: 0;
@@ -436,15 +468,24 @@ onUnmounted(() => {
       radial-gradient(1px 1px at 350px 250px, #FFF 50%, transparent 50%),
       radial-gradient(1px 1px at 450px 50px, #FFF 50%, transparent 50%);
   animation: twinkleAnim 4s ease-in-out infinite;
+  opacity: 0.3;
 }
 
-@keyframes snowfallAnim {
-  0% {
-    transform: translateY(-100px);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
+/* Gradient overlay for depth */
+.gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+      to bottom,
+      rgba(10, 14, 42, 0.3) 0%,
+      transparent 20%,
+      transparent 80%,
+      rgba(74, 44, 146, 0.3) 100%
+  );
+  pointer-events: none;
 }
 
 @keyframes twinkleAnim {
@@ -452,7 +493,7 @@ onUnmounted(() => {
     opacity: 0.2;
   }
   50% {
-    opacity: 0.8;
+    opacity: 0.5;
   }
 }
 </style>
