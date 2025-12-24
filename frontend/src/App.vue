@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import {provide} from "vue";
 import {LocalStorageApi} from "@/service/LocalStorageApi.ts";
+import ChristmasBackground from "@/component/ChristmasBackground.vue";
 
 provide("LocalStorageApi", new LocalStorageApi());
 </script>
 
 <template>
-  <div class="min-h-screen flex">
+  <ChristmasBackground />
+  <div class="min-h-screen flex relative z-0">
     <router-view />
   </div>
 </template>
