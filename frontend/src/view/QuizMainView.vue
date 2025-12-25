@@ -214,10 +214,10 @@ const QRCodeStateChanger = (show: boolean) => {
           <div class="flex flex-col gap-5 p-3" key="gameState.gameFinished" v-if="gameState.gameFinished">
             <div class="text-center text-3xl bg-gradient-to-l from-sky-700/80 to-green-300/50 p-3 border rounded-xl font-bold tektur-badge">Игра завершена</div>
           </div>
-          <div class="flex flex-col gap-5" key="gameState.questionId" v-if="gameState.roundStarted">
+          <LiquidGlass class="flex flex-col gap-5" key="gameState.questionId" v-if="gameState.roundStarted">
             <QuestionComponent :text="gameState?.question?.text!" :image-id="gameState?.question?.imageId"/>
             <AnswerComponent :options="gameState?.answers!" ref="answerComponentRef"/>
-          </div>
+          </LiquidGlass>
           <QuizRatingView key="rating" :items="gameState.rating" v-if="!gameState.roundStarted" @round-update-ended="quizRatingShowNextRoundButton()" ref="quizRatingRef"/>
         </TransitionGroup>
       </LiquidGlass>

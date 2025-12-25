@@ -1,9 +1,9 @@
 <template xmlns="http://www.w3.org/1999/html">
-  <div class="p-6 w-full max-w-6xl mx-auto text-2xl">
+  <LiquidGlass class="p-6 w-full max-w-6xl mx-auto text-2xl">
     <!-- Заголовок квиза -->
-    <div class="mb-8">
+    <LiquidGlass class="mb-8">
       <label
-          class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded border-yellow-500 bg-yellow-50 mb-5"
+          class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded-3xl border-yellow-500 bg-yellow-50 mb-5"
           v-if="quiz.isDirty">
         Квиз не сохранён!
       </label>
@@ -23,12 +23,12 @@
              class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
              placeholder="Введите название квиза"
       />
-    </div>
+    </LiquidGlass>
 
     <!-- Список вопросов -->
-    <div v-for="(question, questionIndex) in quiz.questions"
-         :key="question.viewId"
-         :class="['mb-6 p-4 border rounded-lg transition-colors',
+    <LiquidGlass v-for="(question, questionIndex) in quiz.questions"
+                 :key="question.viewId"
+                 :class="['mb-6 p-4 border rounded-lg transition-colors',
                   question.isDirty ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200']">
 
       <!-- Заголовок вопроса -->
@@ -139,34 +139,36 @@
       <div v-if="question.isDirty" class="flex justify-end text-xl font-medium text-red-600">
         Вопрос не сохранён.
       </div>
-    </div>
+    </LiquidGlass>
 
-    <!-- Кнопки управления -->
-    <div class="flex justify-between gap-4 mt-8 mb-8">
-      <button @click="addQuestion" class="text-blue-600 hover:text-blue-800 text-xl font-medium">+ Добавить вопрос
-      </button>
-      <div class="flex flex-col items-start gap-3">
-        <div v-if="isNotSavableQuiz(quiz)" class="flex justify-end text-xl font-medium text-red-600">
-          Квиз содержит ошибки.
-        </div>
-        <button @click="saveAllQuestions"
-                v-if="quiz.isDirty"
-                :disabled="savingAll || isNotSavableQuiz(quiz)"
-                :class="['w-full p-2 border rounded-xl transition-all duration-100 font-medium', {
+    <LiquidGlass>
+      <!-- Кнопки управления -->
+      <div class="flex justify-between gap-4 mt-8 mb-8">
+        <button @click="addQuestion" class="text-blue-600 hover:text-blue-800 text-xl font-medium">+ Добавить вопрос
+        </button>
+        <div class="flex flex-col items-start gap-3">
+          <div v-if="isNotSavableQuiz(quiz)" class="flex justify-end text-xl font-medium text-red-600">
+            Квиз содержит ошибки.
+          </div>
+          <button @click="saveAllQuestions"
+                  v-if="quiz.isDirty"
+                  :disabled="savingAll || isNotSavableQuiz(quiz)"
+                  :class="['w-full p-2 border rounded-xl transition-all duration-100 font-medium', {
                   'bg-green-100 hover:bg-green-600': quiz.isDirty && !isNotSavableQuiz(quiz),
                   'bg-gray-200': isNotSavableQuiz(quiz)
                 }]">
-          {{ savingAll ? 'Сохранение...' : 'Сохранить' }}
-        </button>
+            {{ savingAll ? 'Сохранение...' : 'Сохранить' }}
+          </button>
+        </div>
       </div>
-    </div>
 
-    <label
-        class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded border-yellow-500 bg-yellow-50"
-        v-if="quiz.isDirty">
-      Квиз не сохранён!
-    </label>
-  </div>
+      <label
+          class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded-3xl border-yellow-500 bg-yellow-50"
+          v-if="quiz.isDirty">
+        Квиз не сохранён!
+      </label>
+    </LiquidGlass>
+  </LiquidGlass>
 </template>
 
 <script setup lang="ts">
@@ -178,6 +180,7 @@ import {
 } from "@/model/QuizTypes.ts"
 import * as z from "zod"
 import {useRoute} from "vue-router";
+import LiquidGlass from "@/component/LiquidGlass.vue";
 
 const route = useRoute();
 
