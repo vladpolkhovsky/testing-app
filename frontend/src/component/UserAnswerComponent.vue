@@ -3,6 +3,7 @@ import type {AnswerOption} from "@/model/AnswerOption.ts";
 import {inject, ref} from "vue";
 import type {SocketService} from "@/service/SocketService.ts";
 import {CircleCheckBig, CircleX, CheckCheck} from "lucide-vue-next"
+import LiquidGlass from "@/component/LiquidGlass.vue";
 
 const props = defineProps<{
   options?: AnswerOption[]
@@ -58,7 +59,7 @@ const select = (id: string) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-5">
+  <LiquidGlass class="flex flex-col gap-5">
     <div class="grid grid-cols-1 gap-2 gap-y-5 text-md xl:text-2xl p-3">
       <div class="w-full flex gap-3 items-center" @click="select(option.id)" v-for="option in answerOptions">
         <div class="w-full flex flex-row justify-start items-center border-b-3 border-dashed mx-3 pb-2" >
@@ -78,7 +79,7 @@ const select = (id: string) => {
     }]" @click="sent(selectedId)">
       {{ isSent ? 'Отправлено!' : 'Выбрать' }}
     </button>
-  </div>
+  </LiquidGlass>
 
 </template>
 

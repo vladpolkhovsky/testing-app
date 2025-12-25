@@ -91,12 +91,14 @@ const handleQuizRoundStopMessage = (message: QuizRoundMessage) => {
 
 <template>
   <div class="flex flex-col shrink items-center p-3 w-full xl:w-5xl gap-3 mx-auto">
-    <LiquidGlass class="w-full text-center text-2xl">{{user?.username}}</LiquidGlass>
+    <LiquidGlass class="w-full text-center text-2xl">
+      <LiquidGlass>{{ user?.username }}</LiquidGlass>
+    </LiquidGlass>
     <LiquidGlass class="w-full text-center">
       <UserAnswerComponent :options="answers" v-if="isRoundStarted" ref="userAnswerComponentRef"/>
-      <div v-else class="text-3xl">
+      <LiquidGlass v-else class="text-3xl">
         Ожидание новых вопросов
-      </div>
+      </LiquidGlass>
     </LiquidGlass>
   </div>
 </template>
