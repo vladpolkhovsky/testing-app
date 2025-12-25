@@ -46,11 +46,11 @@ export interface ParticleConfig {
 }
 
 export const DEFAULT_CONFIG: ParticleConfig = {
-  TREE_COUNT: 15,
-  TREE_MIN_SIZE: 45,
-  TREE_MAX_SIZE: 60,
-  TREE_MIN_SPEED: 1,
-  TREE_MAX_SPEED: 2.5,
+  TREE_COUNT: 10,
+  TREE_MIN_SIZE: 60,
+  TREE_MAX_SIZE: 80,
+  TREE_MIN_SPEED: 1.5,
+  TREE_MAX_SPEED: 2,
   TREE_WIND: 0.3,
   TREE_OPACITY: 0.9,
   TREE_SWING_SPEED_MIN: 0.15,

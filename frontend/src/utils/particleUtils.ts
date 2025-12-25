@@ -9,19 +9,96 @@ export const getRGB = (hex: string): string => {
     const r = parseInt(hex.substring(1, 3), 16)
     const g = parseInt(hex.substring(3, 5), 16)
     const b = parseInt(hex.substring(5, 7), 16)
-    return `${r},${g},${b}`
+    return `${ r },${ g },${ b }`
   }
   return '255,255,255'
 }
 
-export const createTreeParticle = (canvasWidth: number, canvasHeight: number, config: ParticleConfig): TreeParticle => {
-  const size = random(config.TREE_MIN_SIZE, config.TREE_MAX_SIZE)
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!]
+  }
+  return shuffled
+}
 
+export const createGrid = (canvasWidth: number, canvasHeight: number, treeCount: number, treeMaxSize: number) => {
+  const cellSize = Math.max(
+      treeMaxSize * 3,
+      Math.sqrt((canvasWidth * canvasHeight) / treeCount)
+  )
+
+  const grid: { x: number, y: number }[] = []
+
+  const padding = treeMaxSize * 2
+  const totalWidth = canvasWidth + padding * 6
+  const totalHeight = canvasHeight + padding * 2
+
+  const cols = Math.ceil(totalWidth / cellSize)
+  const rows = Math.ceil(totalHeight / cellSize)
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      grid.push({
+        x: col * cellSize - padding,
+        y: row * cellSize - padding
+      })
+    }
+  }
+
+  return shuffleArray(grid)
+}
+
+// Helper to get cell size based on canvas dimensions and tree count
+const getCellSize = (canvasWidth: number, canvasHeight: number, treeCount: number, treeMaxSize: number): number => {
+  return Math.max(
+      treeMaxSize * 2.5,
+      Math.sqrt((canvasWidth * canvasHeight) / treeCount)
+  )
+}
+
+// Helper to get a random position within a grid cell
+const getRandomPositionInCell = (cell: { x: number, y: number }, cellSize: number): { x: number, y: number } => {
+  const maxOffset = cellSize * 0.3
   return {
-    type: 'tree',
-    x: random(-config.TREE_MAX_SIZE, canvasWidth),
-    y: random(-config.TREE_MAX_SIZE, canvasHeight),
-    r: size,
+    x: cell.x + random(-maxOffset, maxOffset),
+    y: cell.y + random(-maxOffset, maxOffset)
+  }
+}
+
+// Helper to find available grid cells
+const getAvailableGridCells = (
+    grid: { x: number, y: number }[],
+    canvasWidth: number,
+    canvasHeight: number,
+    config: ParticleConfig,
+    verticalConstraint?: 'top' | 'bottom' | 'none'
+): { x: number, y: number }[] => {
+  return grid.filter(cell => {
+    const withinHorizontal = cell.x >= -config.TREE_MAX_SIZE &&
+        cell.x <= canvasWidth + config.TREE_MAX_SIZE
+
+    let withinVertical = true
+    if (verticalConstraint === 'top') {
+      withinVertical = cell.y >= -config.TREE_MAX_SIZE && cell.y <= config.TREE_MAX_SIZE
+    } else if (verticalConstraint === 'bottom') {
+      withinVertical = cell.y >= canvasHeight - config.TREE_MAX_SIZE &&
+          cell.y <= canvasHeight + config.TREE_MAX_SIZE
+    } else {
+      withinVertical = cell.y >= -config.TREE_MAX_SIZE &&
+          cell.y <= canvasHeight + config.TREE_MAX_SIZE
+    }
+
+    return withinHorizontal && withinVertical
+  })
+}
+
+// Helper to create tree properties (reused for creation and resetting)
+const createTreeProperties = (config: ParticleConfig) => {
+  return {
+    type: 'tree' as const,
+    r: random(config.TREE_MIN_SIZE, config.TREE_MAX_SIZE),
     velX: config.TREE_WIND * random(-0.5, 0.5),
     velY: random(config.TREE_MIN_SPEED, config.TREE_MAX_SPEED),
     swing: random(0, 2 * Math.PI),
@@ -33,11 +110,10 @@ export const createTreeParticle = (canvasWidth: number, canvasHeight: number, co
   }
 }
 
-export const createSnowflakeParticle = (canvasWidth: number, canvasHeight: number, config: ParticleConfig): SnowflakeParticle => {
+// Helper to create snowflake properties (reused for creation and resetting)
+const createSnowflakeProperties = (config: ParticleConfig) => {
   return {
-    type: 'snowflake',
-    x: random(0, canvasWidth),
-    y: random(0, canvasHeight),
+    type: 'snowflake' as const,
     r: random(config.SNOWFLAKE_MIN_SIZE, config.SNOWFLAKE_MAX_SIZE),
     velX: config.SNOWFLAKE_WIND * random(-0.3, 0.3),
     velY: random(config.SNOWFLAKE_MIN_SPEED, config.SNOWFLAKE_MAX_SPEED),
@@ -49,10 +125,77 @@ export const createSnowflakeParticle = (canvasWidth: number, canvasHeight: numbe
   }
 }
 
-export const updateTreeParticle = (particle: TreeParticle, config: ParticleConfig, deltaTime: number = 1) => {
+export const createTreeParticle = (
+    canvasWidth: number,
+    canvasHeight: number,
+    config: ParticleConfig,
+    grid: { x: number, y: number }[] = [],
+    verticalConstraint?: 'top' | 'bottom' | 'none'
+): TreeParticle => {
+  const baseProps = createTreeProperties(config)
+
+  let x: number, y: number
+
+  if (grid.length > 0) {
+    const availableCells = getAvailableGridCells(grid, canvasWidth, canvasHeight, config, verticalConstraint)
+
+    if (availableCells.length > 0) {
+      const cell = availableCells[Math.floor(Math.random() * availableCells.length)]!
+      const cellSize = getCellSize(canvasWidth, canvasHeight, config.TREE_COUNT, config.TREE_MAX_SIZE)
+      const pos = getRandomPositionInCell(cell, cellSize)
+      x = pos.x
+      y = pos.y
+    } else {
+      // Fallback: random position with constraint
+      if (verticalConstraint === 'top') {
+        x = random(-config.TREE_MAX_SIZE, canvasWidth + config.TREE_MAX_SIZE)
+        y = random(-config.TREE_MAX_SIZE, 0)
+      } else {
+        x = random(-config.TREE_MAX_SIZE, canvasWidth + config.TREE_MAX_SIZE)
+        y = random(-config.TREE_MAX_SIZE, canvasHeight + config.TREE_MAX_SIZE)
+      }
+    }
+  } else {
+    // No grid available
+    x = random(-config.TREE_MAX_SIZE, canvasWidth + config.TREE_MAX_SIZE)
+    y = random(-config.TREE_MAX_SIZE, canvasHeight + config.TREE_MAX_SIZE)
+  }
+
+  return {
+    ...baseProps,
+    x,
+    y
+  }
+}
+
+export const createSnowflakeParticle = (
+    canvasWidth: number,
+    canvasHeight: number,
+    config: ParticleConfig,
+    spawnFromTop: boolean = false
+): SnowflakeParticle => {
+  const baseProps = createSnowflakeProperties(config)
+
+  const x = random(0, canvasWidth)
+  const y = spawnFromTop
+      ? random(-config.SNOWFLAKE_MAX_SIZE, 0)
+      : random(0, canvasHeight)
+
+  return {
+    ...baseProps,
+    x,
+    y
+  }
+}
+
+export const updateTreeParticle = (
+    particle: TreeParticle,
+    config: ParticleConfig,
+    deltaTime: number = 1
+) => {
   particle.velX = Math.abs(particle.velX) < Math.abs(config.TREE_WIND)
-    ? particle.velX + config.TREE_WIND / 20
-    : config.TREE_WIND
+      ? particle.velX + config.TREE_WIND / 20
+      : config.TREE_WIND
 
   particle.x += particle.velX * 0.5 * deltaTime
   particle.y += particle.velY * 0.5 * deltaTime
@@ -62,8 +205,8 @@ export const updateTreeParticle = (particle: TreeParticle, config: ParticleConfi
   if (Math.abs(particle.rotation) >= particle.swingAngle) {
     particle.swingDirection *= -1
     particle.rotation = Math.max(
-      -particle.swingAngle,
-      Math.min(particle.swingAngle, particle.rotation)
+        -particle.swingAngle,
+        Math.min(particle.swingAngle, particle.rotation)
     )
   }
 
@@ -71,60 +214,68 @@ export const updateTreeParticle = (particle: TreeParticle, config: ParticleConfi
     particle.swingSpeed *= 0.98
   } else {
     particle.swingSpeed = Math.min(
-      particle.swingSpeed * 1.02,
-      random(config.TREE_SWING_SPEED_MIN, config.TREE_SWING_SPEED_MAX)
+        particle.swingSpeed * 1.02,
+        random(config.TREE_SWING_SPEED_MIN, config.TREE_SWING_SPEED_MAX)
     )
   }
 }
 
 export const updateSnowflakeParticle = (particle: SnowflakeParticle, config: ParticleConfig, deltaTime: number = 1) => {
   particle.velX = Math.abs(particle.velX) < Math.abs(config.SNOWFLAKE_WIND)
-    ? particle.velX + config.SNOWFLAKE_WIND / 20
-    : config.SNOWFLAKE_WIND
+      ? particle.velX + config.SNOWFLAKE_WIND / 20
+      : config.SNOWFLAKE_WIND
 
   particle.x += (particle.velX * 0.5 + particle.drift) * deltaTime
   particle.y += particle.velY * 0.5 * deltaTime
   particle.rotation += particle.rotationSpeed * deltaTime
 }
 
-export const resetParticle = (particle: Particle, width: number, height: number, config: ParticleConfig) => {
-  const prevR = particle.r
+// Check if a particle is out of bounds
+export const isParticleOutOfBounds = (
+    particle: Particle,
+    width: number,
+    height: number,
+    margin: number = 0,
+    checkTreeHeight: boolean = false
+): boolean => {
+  const marginX = particle.r + margin
+  const marginY = particle.r + margin
 
-  if (particle.type === 'tree') {
-    particle.r = random(config.TREE_MIN_SIZE, config.TREE_MAX_SIZE)
-  } else {
-    particle.r = random(config.SNOWFLAKE_MIN_SIZE, config.SNOWFLAKE_MAX_SIZE)
+  // Check horizontal bounds
+  const outOfHorizontal = particle.x > width + marginX || particle.x < -marginX
+
+  // For trees, check if the entire tree (including height) is out of bounds
+  if (particle.type === 'tree' && checkTreeHeight) {
+    // Trees are drawn with height = particle.r * 3 from particle.y upward
+    const treeHeight = particle.r * 3
+    const treeTop = particle.y - treeHeight
+
+    // Tree is out if its top is below the bottom, OR if bottom is above the top
+    const outOfVertical = treeTop > height + marginY || particle.y < -marginY
+    return outOfHorizontal || outOfVertical
   }
 
-  if (particle.x > width + prevR) {
-    particle.x = -particle.r
-    particle.y = random(0, height)
-  } else if (particle.x < -prevR) {
-    particle.x = width + particle.r
-    particle.y = random(0, height)
-  } else {
-    particle.x = random(0, width)
-    particle.y = -particle.r
-  }
+  // For snowflakes, use simple bounds check
+  const outOfVertical = particle.y > height + marginY || particle.y < -marginY
+  return outOfHorizontal || outOfVertical
+}
 
+export const resetParticle = (
+    particle: Particle,
+    width: number,
+    height: number,
+    config: ParticleConfig,
+    grid?: { x: number, y: number }[]
+) => {
+  // Reset position based on particle type
   if (particle.type === 'tree') {
-    const treeParticle = particle as TreeParticle
-    treeParticle.velX = config.TREE_WIND * random(-0.5, 0.5)
-    treeParticle.velY = random(config.TREE_MIN_SPEED, config.TREE_MAX_SPEED)
-    treeParticle.swing = random(0, 2 * Math.PI)
-    treeParticle.opacity = config.TREE_OPACITY * random(0.8, 1)
-    treeParticle.rotation = random(-config.TREE_SWING_ANGLE_MAX, config.TREE_SWING_ANGLE_MAX)
-    treeParticle.swingSpeed = random(config.TREE_SWING_SPEED_MIN, config.TREE_SWING_SPEED_MAX)
-    treeParticle.swingAngle = random(15, config.TREE_SWING_ANGLE_MAX)
-    treeParticle.swingDirection = Math.random() > 0.5 ? 1 : -1
+    // For trees, always spawn from top using grid
+    const newTree = createTreeParticle(width, height, config, grid, 'top')
+    Object.assign(particle, newTree)
   } else {
-    const snowflakeParticle = particle as SnowflakeParticle
-    snowflakeParticle.velX = config.SNOWFLAKE_WIND * random(-0.3, 0.3)
-    snowflakeParticle.velY = random(config.SNOWFLAKE_MIN_SPEED, config.SNOWFLAKE_MAX_SPEED)
-    snowflakeParticle.swing = random(0, 2 * Math.PI)
-    snowflakeParticle.opacity = config.SNOWFLAKE_OPACITY * random(0.5, 1)
-    snowflakeParticle.rotationSpeed = random(-1, 1)
-    snowflakeParticle.drift = random(-0.2, 0.2)
+    // For snowflakes, spawn from top
+    const newSnowflake = createSnowflakeParticle(width, height, config, true)
+    Object.assign(particle, newSnowflake)
   }
 }
 
@@ -154,7 +305,7 @@ export const drawSnowflake = (ctx: CanvasRenderingContext2D, particle: Snowflake
     ctx.beginPath()
     ctx.moveTo(0, 0)
     ctx.lineTo(Math.cos(angle) * particle.r * 1.5, Math.sin(angle) * particle.r * 1.5)
-    ctx.strokeStyle = `rgba(${getRGB('#FFFFFF')},${particle.opacity})`
+    ctx.strokeStyle = `rgba(${ getRGB('#FFFFFF') },${ particle.opacity })`
     ctx.lineWidth = 1
     ctx.stroke()
 
@@ -166,16 +317,16 @@ export const drawSnowflake = (ctx: CanvasRenderingContext2D, particle: Snowflake
       ctx.beginPath()
       ctx.moveTo(Math.cos(angle) * pos, Math.sin(angle) * pos)
       ctx.lineTo(
-        Math.cos(sideAngle) * particle.r * 0.4 + Math.cos(angle) * pos,
-        Math.sin(sideAngle) * particle.r * 0.4 + Math.sin(angle) * pos
+          Math.cos(sideAngle) * particle.r * 0.4 + Math.cos(angle) * pos,
+          Math.sin(sideAngle) * particle.r * 0.4 + Math.sin(angle) * pos
       )
       ctx.stroke()
 
       ctx.beginPath()
       ctx.moveTo(Math.cos(angle) * pos, Math.sin(angle) * pos)
       ctx.lineTo(
-        Math.cos(sideAngle2) * particle.r * 0.4 + Math.cos(angle) * pos,
-        Math.sin(sideAngle2) * particle.r * 0.4 + Math.sin(angle) * pos
+          Math.cos(sideAngle2) * particle.r * 0.4 + Math.cos(angle) * pos,
+          Math.sin(sideAngle2) * particle.r * 0.4 + Math.sin(angle) * pos
       )
       ctx.stroke()
     }
@@ -183,7 +334,7 @@ export const drawSnowflake = (ctx: CanvasRenderingContext2D, particle: Snowflake
 
   ctx.beginPath()
   ctx.arc(0, 0, particle.r * 0.3, 0, Math.PI * 2)
-  ctx.fillStyle = `rgba(${getRGB('#FFFFFF')},${particle.opacity})`
+  ctx.fillStyle = `rgba(${ getRGB('#FFFFFF') },${ particle.opacity })`
   ctx.fill()
 
   ctx.restore()

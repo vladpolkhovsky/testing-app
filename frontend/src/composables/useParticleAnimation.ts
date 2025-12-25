@@ -1,15 +1,17 @@
-import { ref } from 'vue'
+import { ref, onUnmounted, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import type { Particle, ParticleConfig } from '@/utils/particleTypes'
 import { DEFAULT_CONFIG } from '@/utils/particleTypes'
 import {
+  createGrid,
   createTreeParticle,
   createSnowflakeParticle,
   updateTreeParticle,
   updateSnowflakeParticle,
   resetParticle,
   drawTree,
-  drawSnowflake
+  drawSnowflake,
+  isParticleOutOfBounds
 } from '@/utils/particleUtils'
 
 interface UseParticleAnimationOptions {
@@ -18,7 +20,7 @@ interface UseParticleAnimationOptions {
 }
 
 export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) => {
-  const config: ParticleConfig = { ...DEFAULT_CONFIG, ...options.config }
+  const config: ParticleConfig = {...DEFAULT_CONFIG, ...options.config}
   const treeImagePath = options.treeImagePath || '/christmas_tree.png'
 
   const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -28,6 +30,7 @@ export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) 
   let animationFrameId: number | null = null
   let treeImage: HTMLImageElement | null = null
   let lastTime = 0
+  let treeGrid: { x: number, y: number }[] = []
 
   const loadTreeImage = (): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
@@ -40,14 +43,21 @@ export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) 
 
   const initParticles = (width: number, height: number) => {
     particles.value = []
+    treeGrid = createGrid(width, height, config.TREE_COUNT, config.TREE_MAX_SIZE)
 
+    const treeParticles: Particle[] = []
     for (let i = 0; i < config.TREE_COUNT; i++) {
-      particles.value.push(createTreeParticle(width, height, config))
+      const tree = createTreeParticle(width, height, config, treeGrid)
+      treeParticles.push(tree)
     }
 
+    const snowflakeParticles: Particle[] = []
     for (let i = 0; i < config.SNOWFLAKE_COUNT; i++) {
-      particles.value.push(createSnowflakeParticle(width, height, config))
+      const snowflake = createSnowflakeParticle(width, height, config)
+      snowflakeParticles.push(snowflake)
     }
+
+    particles.value = [...treeParticles, ...snowflakeParticles]
   }
 
   const setupCanvas = () => {
@@ -63,8 +73,7 @@ export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) 
       return
     }
 
-    const { width, height } = canvas.getBoundingClientRect()
-    console.log('Canvas size:', width, height)
+    const {width, height} = canvas.getBoundingClientRect()
     canvas.width = width
     canvas.height = height
 
@@ -90,14 +99,19 @@ export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) 
         updateSnowflakeParticle(particle, config, deltaTime)
       }
 
-      const margin = particle.r * 2
-      if (
-        particle.x > width + margin ||
-        particle.x < -margin ||
-        particle.y > height + margin ||
-        particle.y < -margin
-      ) {
-        resetParticle(particle, width, height, config)
+      // Check bounds and reset if needed
+      // For trees, check with tree height consideration
+      const isOutOfBounds = isParticleOutOfBounds(
+          particle,
+          width,
+          height,
+          particle.r,
+          particle.type === 'tree'
+      )
+
+      if (isOutOfBounds) {
+        resetParticle(particle, width, height, config,
+            particle.type === 'tree' ? treeGrid : undefined)
       }
 
       if (particle.type === 'tree' && treeImage && ctx) {
@@ -112,14 +126,14 @@ export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) 
 
   const start = () => {
     loadTreeImage()
-      .then(img => {
-        treeImage = img
-        setupCanvas()
-        animationFrameId = requestAnimationFrame(animate)
-      })
-      .catch(err => {
-        console.error('Failed to load tree image:', err)
-      })
+        .then(img => {
+          treeImage = img
+          setupCanvas()
+          animationFrameId = requestAnimationFrame(animate)
+        })
+        .catch(err => {
+          console.error('Failed to load tree image:', err)
+        })
   }
 
   const stop = () => {
@@ -131,16 +145,31 @@ export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) 
 
   const handleResize = () => {
     if (!canvasRef.value) return
+
+    stop()
+
     const canvas = canvasRef.value
-    const { width, height } = canvas.getBoundingClientRect()
+    const {width, height} = canvas.getBoundingClientRect()
     canvas.width = width
     canvas.height = height
 
-    particles.value.forEach(particle => {
-      particle.x = (particle.x / (canvas.width || 1)) * width
-      particle.y = (particle.y / (canvas.height || 1)) * height
-    })
+    treeGrid = createGrid(width, height, config.TREE_COUNT, config.TREE_MAX_SIZE)
+
+    initParticles(width, height)
+
+    if (treeImage) {
+      animationFrameId = requestAnimationFrame(animate)
+    }
   }
+
+  onMounted(() => {
+    window.addEventListener('resize', handleResize)
+  })
+
+  onUnmounted(() => {
+    stop()
+    window.removeEventListener('resize', handleResize)
+  })
 
   return {
     canvasRef,
