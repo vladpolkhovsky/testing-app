@@ -136,7 +136,7 @@ export const drawTree = (ctx: CanvasRenderingContext2D, particle: TreeParticle, 
 
   const imageHeight = particle.r * 3
   const imageWidth = (treeImage.width / treeImage.height) * imageHeight
-  ctx.drawImage(treeImage, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
+  ctx.drawImage(treeImage, -imageWidth / 2, -imageHeight, imageWidth, imageHeight)
 
   ctx.restore()
 }

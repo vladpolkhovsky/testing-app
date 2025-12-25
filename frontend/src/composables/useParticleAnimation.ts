@@ -78,7 +78,7 @@ export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) 
     const width = canvas.width
     const height = canvas.height
 
-    const deltaTime = lastTime ? (timestamp - lastTime) / 16.67 : 1
+    const deltaTime = lastTime ? (timestamp - lastTime) / 12 : 1
     lastTime = timestamp
 
     ctx.clearRect(0, 0, width, height)
