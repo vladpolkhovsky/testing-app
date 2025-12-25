@@ -15,6 +15,9 @@ import type {RatingItem} from "@/model/RatingItem.ts";
 import AnswerComponent from "@/component/AnswerComponent.vue";
 import QuizRatingView from "@/view/QuizRatingView.vue";
 
+import 'vue-sonner/style.css'
+import { Toaster, toast } from 'vue-sonner'
+
 SoundEngine.initialize();
 
 const route = useRoute();
@@ -138,6 +141,17 @@ onMounted(() => {
     }, 1700)
   });
 
+  socketService.setOnQuizAnswerSavedMessageCallback(message => {
+    toast.success(`${message.username} ответил на вопрос`, {
+      style: {
+        background: '#6ee7b7',
+        width: 'fit-content',
+        'font-size': '18px',
+        'min-width': '150px'
+      }
+    });
+  });
+
   socketService.activate();
 });
 
@@ -209,6 +223,7 @@ const QRCodeStateChanger = (show: boolean) => {
     </div>
   </div>
 
+  <Toaster :duration="5000" :expand="true" :visible-toasts="15" :clas/>
 </template>
 
 <style scoped>

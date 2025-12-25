@@ -3,6 +3,7 @@ import type {RatingItem} from "@/model/RatingItem.ts";
 import type {Question} from "@/model/Question.ts";
 import type {AnswerOption} from "@/model/AnswerOption.ts";
 import type {
+  QuizAnswerSavedMessage,
   QuizInitializationMessage,
   QuizNewRatingMessage,
   QuizRoundMessage,
@@ -18,3 +19,4 @@ export type OnQuizShowNewQuestionMessageCallback = (message: QuizShowNewQuestion
 export type OnStartQuizQuestionCallback = (message: QuizRoundMessage) => void;
 export type OnEndQuizQuestionCallback = (message: QuizRoundMessage) => void;
 export type OnQuizUpdateRatingMessageCallback = (message: QuizNewRatingMessage) => void;
+export type OnQuizAnswerSavedMessageCallback = (message: QuizAnswerSavedMessage) => void;

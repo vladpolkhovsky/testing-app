@@ -61,14 +61,14 @@ const select = (id: string) => {
   <div class="flex flex-col gap-5">
     <div class="grid grid-cols-1 gap-2 gap-y-5 text-md xl:text-2xl p-3">
       <div class="w-full flex gap-3 items-center" @click="select(option.id)" v-for="option in answerOptions">
-        <CircleX :size="32" class="text-red-700" v-if="selectedId == option.id && isSent && isShowOnlyCorrect && !option.correct" />
-        <CircleCheckBig :size="32" class="text-green-500" v-if="selectedId == option.id && isSent && isShowOnlyCorrect && option.correct" />
-        <CircleCheckBig :size="32" class="text-amber-500" v-if="selectedId == option.id && isSent && !isShowOnlyCorrect" />
-        <CircleCheckBig :size="32" v-if="selectedId == option.id && !isSent" />
-        <CheckCheck :size="32" v-if="selectedId != option.id && isShowOnlyCorrect && option.correct" />
         <div class="w-full flex flex-row justify-start items-center border-b-3 border-dashed mx-3 pb-2" >
-          <div class="p-3 pr-0 mr-5 text-2xl self-end">{{ option.optionVariant }}.</div>
-          <div class="pl-0 p-3 text-xl xl:text-xl self-end text-start">{{ option.optionText }}</div>
+          <CircleX :size="32" class="text-red-700 mr-5" v-if="selectedId == option.id && isSent && isShowOnlyCorrect && !option.correct" />
+          <CircleCheckBig :size="32" class="text-green-500 mr-5" v-if="selectedId == option.id && isSent && isShowOnlyCorrect && option.correct" />
+          <CircleCheckBig :size="32" class="text-amber-500 mr-5" v-if="selectedId == option.id && isSent && !isShowOnlyCorrect" />
+          <CircleCheckBig :size="32" class="text-blue-500 mr-5" v-if="selectedId == option.id && !isSent" />
+          <CheckCheck :size="32" class="text-green-500 mr-5" v-if="selectedId != option.id && isShowOnlyCorrect && option.correct" />
+          <div class="p-3 pr-0 mr-5 text-2xl self-end font-bold">{{ option.optionVariant }}.</div>
+          <div class="pl-0 p-3 text-xl md:text-2xl lg:text-3xl self-end text-start font-medium">{{ option.optionText }}</div>
         </div>
       </div>
     </div>

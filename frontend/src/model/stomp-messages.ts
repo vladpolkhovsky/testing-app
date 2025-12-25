@@ -50,9 +50,16 @@ export interface QuizNewRatingMessage extends QuizMessage {
   ratingItems: RatingItem[]
 }
 
+export interface QuizAnswerSavedMessage extends QuizMessage {
+  type: "ANSWER_SAVED",
+  username: string
+}
+
 export interface QuizMessage {
   type: QuizMessageType,
   quizId: string
 }
 
-export type QuizMessageType = "INIT_MESSAGE" | "NEW_QUESTION" | "START_ROUND" | "STOP_ROUND" | "NEW_RATING";
+export type QuizMessageType = "INIT_MESSAGE" | "NEW_QUESTION" | "START_ROUND" | "STOP_ROUND" | "NEW_RATING" | "ANSWER_SAVED";
+
+

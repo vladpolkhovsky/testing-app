@@ -1,18 +1,13 @@
 package by.vppolkhovsky.tests_app.mapper;
 
-import by.vppolkhovsky.tests_app.dto.AnswerDto;
-import by.vppolkhovsky.tests_app.dto.QuestionDto;
-import by.vppolkhovsky.tests_app.dto.QuizContext;
-import by.vppolkhovsky.tests_app.dto.UserRatingDto;
+import by.vppolkhovsky.tests_app.dto.*;
 import by.vppolkhovsky.tests_app.dto.ws.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.Named;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface QuizMapper {
@@ -48,6 +43,26 @@ public interface QuizMapper {
 
     @Mapping(target = "correct", source = "isCorrect")
     WsAnswerOptionDto toAnswer(AnswerDto answer);
+
+    @Mapping(target = "questions", source = "questions", qualifiedByName = "shuffledQuestionAnswers")
+    QuizDto toShuffled(QuizDto quizDto);
+
+    @Named("shuffledQuestionAnswers")
+    @Mapping(target = "answers", source = "answers", qualifiedByName = "shuffledAnswers")
+    QuestionDto toShuffled(QuestionDto questionDto);
+
+    @Named("shuffledAnswers")
+    default List<AnswerDto> toShuffled(List<AnswerDto> answerDtos) {
+        List<AnswerDto> shuffled = new ArrayList<>(answerDtos.stream().map(this::copy).toList());
+        Collections.shuffle(shuffled);
+        for (int i = 0; i < shuffled.size(); i++) {
+            AnswerDto answer = shuffled.get(i);
+            answer.setOptionVariant(String.valueOf((char) ('A' + i)));
+        }
+        return shuffled;
+    }
+
+    AnswerDto copy(AnswerDto answer);
 
     @Named("questionResolver")
     default WsQuestionDto questionResolver(QuizContext quizContext) {

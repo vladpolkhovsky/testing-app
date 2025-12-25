@@ -5,5 +5,6 @@ public enum QuizMessageType {
     NEW_QUESTION,
     START_ROUND,
     STOP_ROUND,
-    NEW_RATING
+    NEW_RATING,
+    ANSWER_SAVED
 }

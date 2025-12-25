@@ -31,6 +31,7 @@ dependencies {
 	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("io.hypersistence:hypersistence-utils-hibernate-71:3.14.1")
 	implementation("org.mapstruct:mapstruct:1.6.3")
+	implementation("org.apache.commons:commons-lang3:3.20.0")
 
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")

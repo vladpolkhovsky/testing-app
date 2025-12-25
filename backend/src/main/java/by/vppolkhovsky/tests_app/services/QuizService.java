@@ -1,13 +1,11 @@
 package by.vppolkhovsky.tests_app.services;
 
 import by.vppolkhovsky.tests_app.dto.*;
-import by.vppolkhovsky.tests_app.dto.ws.WsQuizInitMessageDto;
-import by.vppolkhovsky.tests_app.dto.ws.WsQuizNewRatingMessageDto;
-import by.vppolkhovsky.tests_app.dto.ws.WsQuizShowNewQuestionMessageDto;
-import by.vppolkhovsky.tests_app.dto.ws.WsStartStopRoundMessageDto;
+import by.vppolkhovsky.tests_app.dto.ws.*;
 import by.vppolkhovsky.tests_app.mapper.QuizMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -81,20 +79,23 @@ public class QuizService {
 
         notifyShowMessageMessage(context);
 
-        CompletableFuture.runAsync(() -> {}, CompletableFuture.delayedExecutor(TIME_START_DELEY, TimeUnit.SECONDS, executor))
+        CompletableFuture.runAsync(() -> {
+            }, CompletableFuture.delayedExecutor(TIME_START_DELEY, TimeUnit.SECONDS, executor))
             .thenRunAsync(() -> notify(contextId, WsStartStopRoundMessageDto.start(context.getCurrentQuestionId(), ROUND_TIME, context.getCurrentRound())), executor)
-            .thenRunAsync(() -> {}, CompletableFuture.delayedExecutor(ROUND_TIME, TimeUnit.SECONDS, executor))
             .thenRunAsync(() -> {
-                WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId(), context.getCurrentRound() + 1, context.getCurrentRound() + 1 > context.getMaxRounds());
+            }, CompletableFuture.delayedExecutor(ROUND_TIME, TimeUnit.SECONDS, executor))
+            .thenRunAsync(() -> {
+                WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId(), context.getCurrentRound(), context.getCurrentRound() + 1 > context.getMaxRounds());
 
                 context.getCurrentQuestion().ifPresent(q -> {
-                    stopMessage.setTextAlternative(q.getTextAlternative());
-                    stopMessage.setImageAlternativeId(q.getImageAlternativeId());
+                    stopMessage.setTextAlternative(StringUtils.trimToNull(q.getTextAlternative()));
+                    stopMessage.setImageAlternativeId(StringUtils.trimToNull(q.getImageAlternativeId()));
                 });
 
                 notify(contextId, stopMessage);
             }, executor)
-            .thenRunAsync(() -> {}, CompletableFuture.delayedExecutor(DISCUSSION_DELAY, TimeUnit.SECONDS, executor))
+            .thenRunAsync(() -> {
+            }, CompletableFuture.delayedExecutor(DISCUSSION_DELAY, TimeUnit.SECONDS, executor))
             .thenRunAsync(() -> stopRound(contextId), executor);
 
         log.info("Start round {}", contextId);
@@ -131,8 +132,7 @@ public class QuizService {
         correctAnswers.forEach(a -> {
             Optional.ofNullable(context.getUserRating().get(a.getUserId())).ifPresent((rating) -> {
                 QuestionDto questionDto = question.orElseThrow();
-                int index = correctAnswerTimes.indexOf(a.getTime());
-                long fromFirstCorrect = Duration.between(correctAnswerTimes.getFirst(), a.getTime()).toSeconds() + 2 + index;
+                long fromFirstCorrect = Duration.between(correctAnswerTimes.getFirst(), a.getTime()).toSeconds() + 1;
                 double multiplier = 1 / Math.sqrt(fromFirstCorrect);
                 rating.setRating(rating.getRating() + Math.round((float) (questionDto.getPrice() * multiplier)));
             });
@@ -156,7 +156,19 @@ public class QuizService {
                 .build();
 
             context.getQuestionAnswers().computeIfAbsent(questionId, (k) -> new HashSet<>());
-            context.getQuestionAnswers().get(questionId).add(answer);
+
+            boolean alreadyAdded = context.getQuestionAnswers().get(questionId).contains(answer);
+
+            if (!alreadyAdded) {
+                context.getQuestionAnswers().get(questionId).add(answer);
+
+                context.getUserRating().values().stream()
+                    .map(UserRatingDto::getUser)
+                    .filter(u -> Objects.equals(u.getUserId(), userId))
+                    .findAny().ifPresent(user -> {
+                        notify(contextId, WsAnswerSavedDto.of(user.getUsername()));
+                    });
+            }
 
             log.info("Save answer {}", answer);
         }

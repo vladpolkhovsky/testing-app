@@ -1,12 +1,13 @@
 import type {Client} from "@stomp/stompjs";
 import {SocketFactory} from "@/service/SocketFactory.ts";
 import type {
-  OnConnectCallback, OnEndQuizQuestionCallback, OnQuizInitializationMessageCallback,
+  OnConnectCallback, OnEndQuizQuestionCallback, OnQuizAnswerSavedMessageCallback, OnQuizInitializationMessageCallback,
   OnQuizShowNewQuestionMessageCallback, OnQuizUpdateRatingMessageCallback,
   OnStartQuizQuestionCallback
 } from "@/model/types.ts";
 import type {User} from "@/model/User.ts";
 import type {
+  QuizAnswerSavedMessage,
   QuizInitializationMessage,
   QuizMessage, QuizNewRatingMessage,
   QuizRoundMessage,
@@ -24,6 +25,7 @@ export class SocketService {
   private handleStartQuizQuestionCallback?: OnStartQuizQuestionCallback;
   private handleEndQuizQuestionCallback?: OnEndQuizQuestionCallback;
   private handleQuizUpdateRatingMessageCallback?: OnQuizUpdateRatingMessageCallback;
+  private handleQuizAnswerSavedMessageCallback?: OnQuizAnswerSavedMessageCallback;
 
   public constructor(roomId: string, user?: User) {
     this.roomId = roomId;
@@ -71,6 +73,11 @@ export class SocketService {
       if (type == "NEW_RATING") {
         const typedMessage = pasred as QuizNewRatingMessage
         this.handleQuizUpdateRatingMessageCallback?.call(this, typedMessage);
+      }
+
+      if (type == "ANSWER_SAVED") {
+        const typedMessage = pasred as QuizAnswerSavedMessage
+        this.handleQuizAnswerSavedMessageCallback?.call(this, typedMessage)
       }
     });
   }
@@ -125,5 +132,9 @@ export class SocketService {
 
   public setOnQuizUpdateRatingMessageCallback(handleQuizUpdateRatingMessageCallback: OnQuizUpdateRatingMessageCallback) {
     this.handleQuizUpdateRatingMessageCallback = handleQuizUpdateRatingMessageCallback;
+  }
+
+  public setOnQuizAnswerSavedMessageCallback(handleQuizAnswerSavedMessageCallback: OnQuizAnswerSavedMessageCallback) {
+    this.handleQuizAnswerSavedMessageCallback = handleQuizAnswerSavedMessageCallback;
   }
 }
