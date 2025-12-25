@@ -131,10 +131,23 @@ public class QuizService {
 
         correctAnswers.forEach(a -> {
             Optional.ofNullable(context.getUserRating().get(a.getUserId())).ifPresent((rating) -> {
-                QuestionDto questionDto = question.orElseThrow();
-                long fromFirstCorrect = Duration.between(correctAnswerTimes.getFirst(), a.getTime()).toSeconds() + 1;
-                double multiplier = 1 / Math.sqrt(fromFirstCorrect);
-                rating.setRating(rating.getRating() + Math.round((float) (questionDto.getPrice() * multiplier)));
+                QuestionDto currentQuestion = question.orElseThrow();
+                double halfPrice = currentQuestion.getPrice() / 2.0;
+
+                // Разница в миллисекундах от первого правильного ответа
+                long timeDiffMs = Duration.between(correctAnswerTimes.getFirst(), a.getTime()).toMillis();
+
+                // Преобразуем миллисекунды в секунды с точностью до 3 знаков
+                double timeDiffSeconds = timeDiffMs / 1000.0;
+
+                // Формула: 500 + 500 * e^(-время/10)
+                double exponent = Math.exp(-timeDiffSeconds / 10.0);
+                double points = halfPrice + halfPrice * exponent;
+
+                // Гарантируем минимум 500 очков
+                points = Math.max(halfPrice, points);
+
+                rating.setRating(rating.getRating() + (int) Math.round(points));
             });
         });
 
