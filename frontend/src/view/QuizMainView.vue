@@ -223,7 +223,7 @@ const QRCodeStateChanger = (show: boolean) => {
     </div>
   </div>
 
-  <Toaster :duration="5000" :expand="true" :visible-toasts="15" :clas/>
+  <Toaster :duration="5000" :expand="true" :visible-toasts="15" />
 </template>
 
 <style scoped>
