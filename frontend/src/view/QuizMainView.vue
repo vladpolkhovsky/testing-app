@@ -116,6 +116,7 @@ onMounted(() => {
     const duration = message.duration;
     gameState.gameStarted = true;
     gameState.roundStarted = true;
+    gameState.currentRound = message.nextRound;
 
     if (answerComponentRef.value) {
       answerComponentRef.value.reset()
