@@ -103,7 +103,7 @@ const createTreeProperties = (config: ParticleConfig) => {
     velY: random(config.TREE_MIN_SPEED, config.TREE_MAX_SPEED),
     swing: random(0, 2 * Math.PI),
     opacity: config.TREE_OPACITY * random(0.8, 1),
-    rotation: random(-config.TREE_SWING_ANGLE_MAX, config.TREE_SWING_ANGLE_MAX),
+    rotation: random(-config.TREE_SWING_ANGLE_MAX, config.TREE_SWING_ANGLE_MAX) ?? config.TREE_SWING_ANGLE_MAX,
     swingSpeed: random(config.TREE_SWING_SPEED_MIN, config.TREE_SWING_SPEED_MAX),
     swingAngle: random(15, config.TREE_SWING_ANGLE_MAX),
     swingDirection: Math.random() > 0.5 ? 1 : -1
