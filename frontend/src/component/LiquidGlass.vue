@@ -1,40 +1,30 @@
-<script setup lang="ts">
-
-</script>
-
 <template>
-  <div class="p-3 glass-card">
-    <slot/>
+  <div class="relative p-6 group">
+    <!-- Main content -->
+    <div
+        class="relative bg-white/50 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl shadow-black/5 overflow-hidden">
+      <!-- Inner shine effect -->
+      <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"/>
+
+      <!-- Content slot -->
+      <div class="p-6">
+        <slot/>
+      </div>
+
+      <!-- Bottom glow -->
+      <div
+          class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20"/>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.glass-card {
-  background: rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-      inset 0 0 0px 0px rgba(255, 255, 255, 0);
-  overflow: visible;
-}
-
-.glass-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.8),
-      transparent
-  );
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 </style>

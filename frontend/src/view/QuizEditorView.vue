@@ -2,165 +2,409 @@
   <div class="flex flex-col shrink items-center p-3 w-full xl:w-6xl mx-auto">
     <LiquidGlass class="w-full m-5 xm:w-3xl p-8 flex flex-col gap-8">
       <!-- Заголовок квиза -->
-      <LiquidGlass class="py-4 px-6">
+      <LiquidGlass class="p-6">
+        <div
+            v-if="quiz.isDirty"
+            class="w-full mb-6 p-4 rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-lg"
+        >
+          <div class="flex items-center justify-center gap-3">
+            <svg class="w-6 h-6 text-amber-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"/>
+            </svg>
+            <span class="text-xl font-bold text-amber-800">Квиз не сохранён!</span>
+          </div>
+        </div>
+
         <label
-            class="w-full block text-center text-2xl font-medium text-black p-3 border rounded-3xl border-yellow-500 bg-yellow-50 mb-5"
-            v-if="quiz.isDirty">
-          Квиз не сохранён!
-        </label>
-        <label class="block text-2xl font-medium mb-2">
+            class="block text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           Название квиза
         </label>
-        <input v-model="quiz.title"
-               @change="validateQuiz"
-               @input="markQuizTitleDirty"
-               type="text"
-               class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
-               placeholder="Введите название квиза"
+        <input
+            v-model="quiz.title"
+            @change="validateQuiz"
+            @input="markQuizTitleDirty"
+            type="text"
+            class="w-full p-4 border-2 border-gray-300 rounded-2xl shadow-sm focus:ring-4 focus:ring-blue-200/50 focus:border-blue-400 transition-all duration-300 text-lg hover:border-blue-300"
+            placeholder="Введите название квиза"
         />
         <ValidationErrorComponent errorText="Название квиза не может быть пустым" v-if="quiz.hasErrorInTitle"/>
         <ValidationErrorComponent errorText="Название квиза не сохранено" v-if="quiz.isTitleDirty"/>
       </LiquidGlass>
 
       <!-- Список вопросов -->
-      <LiquidGlass v-for="(question, questionIndex) in quiz.questions"
-                   :key="question.viewId"
-                   :class="['py-4 px-6 border rounded-lg transition-colors',
-                    question.isDirty ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200']">
+      <LiquidGlass
+          v-for="(question, questionIndex) in quiz.questions"
+          :key="question.viewId"
+          class="p-6 transition-all duration-500"
+          :class="[
+          'hover:shadow-xl',
+          question.isDirty ? 'ring-2 ring-amber-400 ring-offset-2 bg-gradient-to-br from-amber-50/50 to-yellow-50/50' : ''
+        ]"
+      >
 
         <!-- Заголовок вопроса -->
-        <div class="flex justify-between items-center mb-4">
-          <div class="inline-flex items-center gap-3">
-            <h3 class="text-2xl font-medium">Вопрос</h3>
-            <input class="min-w-16 field-sizing-content" :placeholder="(questionIndex + 1).toString()" type="number"
-                   step="1" min="1"
-                   @change="moveQuestionToPosition($event, question)"/>
+        <div class="flex justify-between items-center mb-6">
+          <div class="inline-flex items-center gap-4">
+            <div class="relative">
+              <div
+                  class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                {{ questionIndex + 1 }}
+              </div>
+              <div
+                  class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl blur opacity-50"></div>
+            </div>
+            <h3 class="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              Вопрос
+            </h3>
           </div>
-          <CircleX @click="removeQuestion(questionIndex)" class="hover:text-rose-700" :size="32"/>
+
+          <div class="flex items-center gap-3">
+            <input
+                class="w-20 p-2 border-2 border-gray-300 rounded-xl text-center font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all"
+                :placeholder="(questionIndex + 1).toString()"
+                type="number"
+                step="1"
+                min="1"
+                @change="moveQuestionToPosition($event, question)"
+                @input="markQuestionDirty(question)"
+            />
+            <button
+                @click="removeQuestion(questionIndex)"
+                class="group p-2 rounded-xl transition-all duration-300 hover:bg-rose-50 hover:shadow-lg"
+            >
+              <CircleX
+                  class="text-gray-500 group-hover:text-rose-600 group-hover:scale-110 transition-transform duration-300"
+                  :size="28"/>
+            </button>
+          </div>
         </div>
 
-        <div class="flex justify-between items-center mb-4 w-full gap-3">
+        <div class="flex flex-col lg:flex-row gap-6 mb-6">
           <!-- Текст вопроса -->
-          <div class="w-full">
-            <label class="block text-xl w-full font-medium text-gray-700 mb-2">
+          <div class="lg:w-1/2">
+            <label class="text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clip-rule="evenodd"/>
+              </svg>
               Текст вопроса
             </label>
             <textarea
                 v-model="question.text"
                 @change="markQuestionDirty(question)"
                 @input="validateQuestion(question)"
-                rows="3"
-                class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
+                rows="4"
+                class="w-full p-4 border-2 border-gray-300 rounded-2xl shadow-sm focus:ring-4 focus:ring-blue-200/50 focus:border-blue-400 transition-all duration-300 resize-none hover:border-blue-300"
                 placeholder="Введите текст вопроса"
             />
             <ValidationErrorComponent errorText="Текст вопроса не может быть пустым" v-if="question.hasErrorInText"/>
           </div>
 
           <!-- Текст объяснения -->
-          <div class="w-full">
-            <label class="block text-xl w-full font-medium text-gray-700 mb-2">
-              Объяснение ответа (Опционально)
+          <div class="lg:w-1/2">
+            <label class="text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clip-rule="evenodd"/>
+              </svg>
+              Объяснение ответа <span class="text-sm font-normal text-gray-500">(Опционально)</span>
             </label>
             <textarea
                 v-model="question.textAlternative"
                 @change="markQuestionDirty(question)"
                 @input="validateQuestion(question)"
-                rows="3"
-                class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
+                rows="4"
+                class="w-full p-4 border-2 border-gray-300 rounded-2xl shadow-sm focus:ring-4 focus:ring-purple-200/50 focus:border-purple-400 transition-all duration-300 resize-none hover:border-purple-300"
                 placeholder="Введите текст объяснения ответа"
             />
             <ValidationErrorComponent
                 errorText="Объяснение ответа либо пустое либо содержит символы отличные от пробела"
-                v-if="question.hasErrorInTextAlternative"/>
+                v-if="question.hasErrorInTextAlternative"
+            />
           </div>
         </div>
 
-        <div class="flex justify-between items-baseline mb-4 w-full gap-5">
-          <div class="w-full p-2 border border-gray-400 rounded-xl">
-            <div class="flex justify-between items-center mb-1">
-              <div class="text-sm font-medium text-gray-700">Файл вопроса</div>
-              <CircleX class="hover:text-rose-700" :size="24" @click="removeImage(question)"/>
+        <div class="flex flex-col lg:flex-row gap-6 mb-6">
+          <!-- Файл вопроса -->
+          <div class="lg:w-1/2">
+            <div
+                class="border-2 border-gray-300 rounded-2xl p-4 transition-all duration-300 hover:border-blue-400 hover:shadow-lg">
+              <div class="flex justify-between items-center mb-3">
+                <label class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                          d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                  Файл вопроса
+                </label>
+                <button
+                    v-if="question.imageId"
+                    @click="removeImage(question)"
+                    class="p-1 rounded-lg hover:bg-rose-50 transition-colors"
+                >
+                  <CircleX class="text-gray-500 hover:text-rose-600" :size="20"/>
+                </button>
+              </div>
+
+              <div v-if="question.imageId" class="mb-4">
+                <div class="relative overflow-hidden rounded-xl group">
+                  <img
+                      :src="'/api/quiz/image/' + question.imageId"
+                      class="w-full h-48 object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div
+                      class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+              </div>
+
+              <label class="block cursor-pointer">
+                <div
+                    class="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-300 group">
+                  <svg class="w-6 h-6 text-gray-400 group-hover:text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                          d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414-1.414z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-gray-600 group-hover:text-blue-600 font-medium">Загрузить изображение</span>
+                </div>
+                <input
+                    type="file"
+                    @change="handleFileUpload($event, question, id => question.imageId = id)"
+                    class="hidden"
+                    accept="image/*"
+                />
+              </label>
             </div>
-            <img v-if="question.imageId" :src="'/api/quiz/image/' + question.imageId" class="w-full mb-2">
-            <input type="file" @change="handleFileUpload($event, question, id => question.imageId = id)"
-                   class="w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:text-sm file:font-semibold hover:file:bg-blue-200"/>
           </div>
-          <div class="w-full p-2 border border-gray-400 rounded-xl">
-            <div class="flex flex-row justify-between items-center mb-1">
-              <label class="text-sm font-medium text-gray-700">Файл объяснения ответа</label>
-              <CircleX class="hover:text-rose-700" :size="24" @click="removeImageAlternative(question)"/>
+
+          <!-- Файл объяснения ответа -->
+          <div class="lg:w-1/2">
+            <div
+                class="border-2 border-gray-300 rounded-2xl p-4 transition-all duration-300 hover:border-purple-400 hover:shadow-lg">
+              <div class="flex justify-between items-center mb-3">
+                <label class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                  Файл объяснения
+                </label>
+                <button
+                    v-if="question.imageAlternativeId"
+                    @click="removeImageAlternative(question)"
+                    class="p-1 rounded-lg hover:bg-rose-50 transition-colors"
+                >
+                  <CircleX class="text-gray-500 hover:text-rose-600" :size="20"/>
+                </button>
+              </div>
+
+              <div v-if="question.imageAlternativeId" class="mb-4">
+                <div class="relative overflow-hidden rounded-xl group">
+                  <img
+                      :src="'/api/quiz/image/' + question.imageAlternativeId"
+                      class="w-full h-48 object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div
+                      class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+              </div>
+
+              <label class="block cursor-pointer">
+                <div
+                    class="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-400 hover:bg-purple-50/50 transition-all duration-300 group">
+                  <svg class="w-6 h-6 text-gray-400 group-hover:text-purple-500" fill="currentColor"
+                       viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                          d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414-1.414z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-gray-600 group-hover:text-purple-600 font-medium">Загрузить изображение</span>
+                </div>
+                <input
+                    type="file"
+                    @change="handleFileUpload($event, question, id => question.imageAlternativeId = id)"
+                    class="hidden"
+                    accept="image/*"
+                />
+              </label>
             </div>
-            <img v-if="question.imageAlternativeId" :src="'/api/quiz/image/' + question.imageAlternativeId"
-                 class="w-full mb-2">
-            <input type="file" @change="handleFileUpload($event, question, id => question.imageAlternativeId = id)"
-                   class="block w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:text-sm file:font-semibold hover:file:bg-blue-200"/>
           </div>
         </div>
 
         <!-- Ответы -->
-        <div class="mb-4">
-          <div class="flex justify-between items-center mb-4">
-            <label class="block font-medium text-gray-700 text-2xl">Ответы</label>
-            <button @click="addAnswer(question)" class="text-blue-600 hover:text-blue-800 text-sm font-medium">+
-              Добавить
-              ответ
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-6">
+            <label class="block text-2xl font-bold text-gray-800">Ответы</label>
+            <button
+                @click="addAnswer(question)"
+                class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Добавить ответ
             </button>
           </div>
 
-          <div v-for="(answer, answerIndex) in question.answers" :key="answer.viewId" :class="[ 'flex flex-col gap-3 mb-2', {
-            'p-3 bg-rose-100 border rounded-xl border-rose-700': answer.textValidationError
-          }]">
-            <div class="flex items-center gap-3">
-              <div class="relative inline-flex items-center w-12 h-12">
-                <Transition name="slide-up">
-                  <CircleCheckBig v-if="answer.isCorrect" :size="32" class="text-green-500 absolute"/>
-                  <Circle v-else :size="32" class="text-rose-700 absolute"
-                          @click="questionUpdateCorrect(question, answerIndex)"/>
-                </Transition>
+          <div class="space-y-4">
+            <div
+                v-for="(answer, answerIndex) in question.answers"
+                :key="answer.viewId"
+                :class="[
+                'p-4 rounded-2xl border-2 transition-all duration-300',
+                answer.textValidationError
+                  ? 'border-rose-400'
+                  : 'border-gray-200 hover:border-blue-300 hover:shadow-lg'
+              ]"
+            >
+              <div class="flex items-center gap-4">
+                <!-- Кнопка выбора правильного ответа -->
+                <button
+                    @click="questionUpdateCorrect(question, answerIndex)"
+                    :class="[
+                    'relative w-10 h-10 rounded-full border-2 transition-all duration-300 flex-shrink-0',
+                    answer.isCorrect
+                      ? 'border-green-500 bg-green-50 shadow-inner'
+                      : 'border-gray-300 hover:border-rose-400 hover:bg-rose-50'
+                  ]"
+                >
+                  <div
+                      :class="[
+                      'absolute inset-1 rounded-full transition-all duration-300',
+                      answer.isCorrect
+                        ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg'
+                        : 'bg-gray-300'
+                    ]"
+                  ></div>
+                  <CircleCheckBig
+                      v-if="answer.isCorrect"
+                      :size="16"
+                      class="absolute inset-0 m-auto text-white z-10"
+                  />
+                </button>
+
+                <!-- Поле ввода ответа -->
+                <input
+                    v-model="answer.optionText"
+                    @change="markQuestionDirty(question)"
+                    @input="validateQuestion(question)"
+                    type="text"
+                    :class="[
+                    'flex-1 p-3 text-lg border-2 rounded-xl focus:ring-4 focus:ring-blue-200/50 transition-all duration-300',
+                    answer.textValidationError
+                      ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200/50'
+                      : 'border-gray-300 focus:border-blue-400'
+                  ]"
+                    placeholder="Введите вариант ответа"
+                />
+
+                <!-- Кнопка удаления -->
+                <button
+                    @click="removeAnswer(questionIndex, answerIndex)"
+                    :class="[
+                    'p-2 rounded-lg transition-all duration-300 flex-shrink-0',
+                    question.answers.length > 1
+                      ? 'hover:bg-rose-50 hover:text-rose-600'
+                      : 'opacity-50 cursor-not-allowed'
+                  ]"
+                    :disabled="question.answers.length <= 1"
+                >
+                  <CircleX :size="24"/>
+                </button>
               </div>
-              <input v-model="answer.optionText"
-                     @change="markQuestionDirty(question)"
-                     @input="validateQuestion(question)"
-                     type="text"
-                     class="flex-1 text-xl p-2 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
-                     placeholder="Введите вариант ответа"/>
-              <CircleX class="hover:text-rose-700 ml-3" :size="32" @click="removeAnswer(questionIndex, answerIndex)"/>
+
+              <ValidationErrorComponent
+                  v-if="answer.textValidationError"
+                  errorText="Ответ не может быть пустым"
+                  class="mt-2"
+              />
             </div>
-            <ValidationErrorComponent errorText="Пустой ответ" v-if="answer.textValidationError" />
           </div>
         </div>
 
         <!-- Уведомление о несохранённом вопросе -->
-        <div v-if="question.isDirty" class="flex justify-end">
-          <ValidationErrorComponent errorText="Вопрос не сохранён"/>
+        <div
+            v-if="question.isDirty"
+            class="flex items-center justify-end gap-2 p-3 rounded-xl bg-gradient-to-r from-amber-50/80 to-yellow-50/80 border border-amber-200"
+        >
+          <svg class="w-5 h-5 text-amber-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"/>
+          </svg>
+          <span class="text-amber-700 font-medium">Вопрос не сохранён</span>
         </div>
       </LiquidGlass>
 
-      <LiquidGlass>
-        <!-- Кнопки управления -->
-        <div class="flex justify-between gap-4">
-          <button @click="addQuestion" class="text-blue-600 hover:text-blue-800 text-xl font-medium my-2 mx-4">
-            + Добавить вопрос
+      <!-- Кнопки управления -->
+      <LiquidGlass class="p-6">
+        <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
+          <button
+              @click="addQuestion"
+              class="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold text-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-xl w-full lg:w-auto justify-center"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Добавить вопрос
           </button>
-          <div class="flex flex-col items-start gap-3 my-2">
-            <ValidationErrorComponent errorText="Квиз содержит ошибки" v-if="isNotSavableQuiz(quiz)"/>
-            <button @click="saveAllQuestions"
-                    v-if="quiz.isDirty"
-                    :disabled="savingAll || isNotSavableQuiz(quiz)"
-                    :class="['w-full py-2 px-4 border rounded-xl transition-all duration-100 font-medium', {
-                    'bg-green-100 hover:bg-green-300': quiz.isDirty && !isNotSavableQuiz(quiz),
-                    'bg-gray-200': isNotSavableQuiz(quiz)
-                  }]">
-              {{ savingAll ? 'Сохранение...' : 'Сохранить' }}
+
+          <div class="flex flex-col items-end gap-3 w-full lg:w-auto">
+            <ValidationErrorComponent
+                v-if="isNotSavableQuiz(quiz)"
+                errorText="Квиз содержит ошибки"
+                class="text-lg"
+            />
+
+            <button
+                @click="saveAllQuestions"
+                v-if="quiz.isDirty"
+                :disabled="savingAll || isNotSavableQuiz(quiz)"
+                :class="[
+                'px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 w-full lg:w-auto',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                !isNotSavableQuiz(quiz)
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:shadow-xl'
+                  : 'bg-gradient-to-r from-gray-400 to-gray-500 text-gray-800'
+              ]"
+            >
+              <span class="flex items-center justify-center gap-2">
+                <svg
+                    v-if="savingAll"
+                    class="w-5 h-5 animate-spin"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                {{ savingAll ? 'Сохранение...' : 'Сохранить квиз' }}
+              </span>
             </button>
           </div>
         </div>
 
-        <label
-            class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded-3xl border-yellow-500 bg-yellow-50"
-            v-if="quiz.isDirty">
-          Квиз не сохранён!
-        </label>
+        <!-- Уведомление о несохранённом квизе -->
+        <div
+            v-if="quiz.isDirty"
+            class="mt-6 p-4 rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-lg"
+        >
+          <div class="flex items-center justify-center gap-3">
+            <svg class="w-6 h-6 text-amber-600 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"/>
+            </svg>
+            <span class="text-xl font-bold text-amber-800">Не забудьте сохранить квиз!</span>
+          </div>
+        </div>
       </LiquidGlass>
     </LiquidGlass>
   </div>
