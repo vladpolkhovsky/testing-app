@@ -1,186 +1,186 @@
-<template xmlns="http://www.w3.org/1999/html">
-  <LiquidGlass class="p-6 w-full max-w-6xl mx-auto text-2xl">
-    <!-- Заголовок квиза -->
-    <LiquidGlass class="mb-8">
-      <label
-          class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded-3xl border-yellow-500 bg-yellow-50 mb-5"
-          v-if="quiz.isDirty">
-        Квиз не сохранён!
-      </label>
-      <label class="block text-xl font-medium text-gray-700 mb-2">
-        Название квиза
-      </label>
-      <label class="block text-sm font-medium text-red-700 mb-2" v-if="quiz.hasErrorInTitle">
-        Название квиза не может быть пустым
-      </label>
-      <label class="block text-sm font-medium text-red-700 mb-2" v-if="quiz.isTitleDirty">
-        Название квиза не сохранено
-      </label>
-      <input v-model="quiz.title"
-             @change="validateQuiz"
-             @input="markQuizTitleDirty"
-             type="text"
-             class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-             placeholder="Введите название квиза"
-      />
-    </LiquidGlass>
+<template>
+  <div class="flex flex-col shrink items-center p-3 w-full xl:w-6xl mx-auto">
+    <LiquidGlass class="w-full m-5 xm:w-3xl p-8 flex flex-col gap-8">
+      <!-- Заголовок квиза -->
+      <LiquidGlass class="py-4 px-6">
+        <label
+            class="w-full block text-center text-2xl font-medium text-black p-3 border rounded-3xl border-yellow-500 bg-yellow-50 mb-5"
+            v-if="quiz.isDirty">
+          Квиз не сохранён!
+        </label>
+        <label class="block text-2xl font-medium mb-2">
+          Название квиза
+        </label>
+        <input v-model="quiz.title"
+               @change="validateQuiz"
+               @input="markQuizTitleDirty"
+               type="text"
+               class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
+               placeholder="Введите название квиза"
+        />
+        <ValidationErrorComponent errorText="Название квиза не может быть пустым" v-if="quiz.hasErrorInTitle"/>
+        <ValidationErrorComponent errorText="Название квиза не сохранено" v-if="quiz.isTitleDirty"/>
+      </LiquidGlass>
 
-    <!-- Список вопросов -->
-    <LiquidGlass v-for="(question, questionIndex) in quiz.questions"
-                 :key="question.viewId"
-                 :class="['mb-6 p-4 border rounded-lg transition-colors',
-                  question.isDirty ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200']">
+      <!-- Список вопросов -->
+      <LiquidGlass v-for="(question, questionIndex) in quiz.questions"
+                   :key="question.viewId"
+                   :class="['py-4 px-6 border rounded-lg transition-colors',
+                    question.isDirty ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200']">
 
-      <!-- Заголовок вопроса -->
-      <div class="flex justify-between items-center mb-4">
-        <div class="inline-flex items-center gap-3">
-          <h3 class="text-2xl font-medium">Вопрос</h3>
-          <input class="min-w-16 field-sizing-content" :placeholder="(questionIndex + 1).toString()" type="number"
-                 step="1" min="1"
-                 @change="moveQuestionToPosition($event, question)"/>
-        </div>
-        <CircleX @click="removeQuestion(questionIndex)" class="hover:text-red-500" :size="32"/>
-      </div>
-
-      <div class="flex justify-between items-center mb-4 w-full gap-3">
-        <!-- Текст вопроса -->
-        <div class="w-full">
-          <label class="block text-xl w-full font-medium text-gray-700 mb-2">
-            Текст вопроса
-          </label>
-          <label class="block text-sm w-full font-medium text-red-700 mb-2" v-if="question.hasErrorInText">
-            Вопрос не может быть пустым
-          </label>
-          <textarea
-              v-model="question.text"
-              @change="markQuestionDirty(question)"
-              @input="validateQuestion(question)"
-              rows="3"
-              class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Введите текст вопроса"
-          />
-        </div>
-
-        <!-- Текст вопроса -->
-        <div class="w-full">
-          <label class="block text-xl w-full font-medium text-gray-700 mb-2">
-            Объяснение ответа (Опционально)
-          </label>
-          <label class="block text-sm w-full font-medium text-red-700 mb-2" v-if="question.hasErrorInTextAlternative">
-            Объяснение ответа либо пустое либо соджержит символы отличные от пробела
-          </label>
-          <textarea
-              v-model="question.textAlternative"
-              @change="markQuestionDirty(question)"
-              @input="validateQuestion(question)"
-              rows="3"
-              class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Введите текст объяснение ответа"
-          />
-        </div>
-      </div>
-
-      <div class="flex justify-between items-baseline mb-4 w-full gap-5">
-        <div class="w-full p-2 border rounded">
-          <div class="flex justify-between items-center mb-1">
-            <div class="text-sm font-medium text-gray-700">Файл вопроса</div>
-            <CircleX class="hover:text-red-500" :size="24" @click="removeImage(question)"/>
-          </div>
-          <img v-if="question.imageId" :src="'/api/quiz/image/' + question.imageId" class="w-full mb-2">
-          <input type="file" @change="handleFileUpload($event, question, id => question.imageId = id)"
-                 class="w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:text-sm file:font-semibold hover:file:bg-blue-400"/>
-        </div>
-        <div class="w-full p-2 border rounded">
-          <div class="flex flex-row justify-between items-center mb-1">
-            <label class="text-sm font-medium text-gray-700">Файл объяснение ответа</label>
-            <CircleX class="hover:text-red-500" :size="24" @click="removeImageAlternative(question)"/>
-          </div>
-          <img v-if="question.imageAlternativeId" :src="'/api/quiz/image/' + question.imageAlternativeId"
-               class="w-full mb-2">
-          <input type="file" @change="handleFileUpload($event, question, id => question.imageAlternativeId = id)"
-                 class="block w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:text-sm file:font-semibold hover:file:bg-blue-400"/>
-        </div>
-      </div>
-
-      <!-- Ответы -->
-      <div class="mb-4">
+        <!-- Заголовок вопроса -->
         <div class="flex justify-between items-center mb-4">
-          <label class="block font-medium text-gray-700 text-2xl">Ответы</label>
-          <button @click="addAnswer(question)" class="text-blue-600 hover:text-blue-800 text-sm font-medium">+ Добавить
-            ответ
-          </button>
+          <div class="inline-flex items-center gap-3">
+            <h3 class="text-2xl font-medium">Вопрос</h3>
+            <input class="min-w-16 field-sizing-content" :placeholder="(questionIndex + 1).toString()" type="number"
+                   step="1" min="1"
+                   @change="moveQuestionToPosition($event, question)"/>
+          </div>
+          <CircleX @click="removeQuestion(questionIndex)" class="hover:text-red-500" :size="32"/>
         </div>
 
-        <div v-for="(answer, answerIndex) in question.answers" :key="answer.viewId" :class="[ 'flex flex-col gap-3 mb-2', {
-          'p-3 border rounded-xl border-red-700': answer.textValidationError,
-        }]">
-          <label class="text-sm w-full font-medium text-red-700 mb-2" v-if="answer.textValidationError">Пустой
-            ответ</label>
-          <div class="flex items-center gap-3">
-            <div class="relative inline-flex items-center w-12 h-12">
-              <Transition name="slide-up">
-                <CircleCheckBig v-if="answer.isCorrect" :size="32" class="text-green-500 absolute"/>
-                <Circle v-else :size="32" class="text-red-500 absolute"
-                        @click="questionUpdateCorrect(question, answerIndex)"/>
-              </Transition>
+        <div class="flex justify-between items-center mb-4 w-full gap-3">
+          <!-- Текст вопроса -->
+          <div class="w-full">
+            <label class="block text-xl w-full font-medium text-gray-700 mb-2">
+              Текст вопроса
+            </label>
+            <textarea
+                v-model="question.text"
+                @change="markQuestionDirty(question)"
+                @input="validateQuestion(question)"
+                rows="3"
+                class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
+                placeholder="Введите текст вопроса"
+            />
+            <ValidationErrorComponent errorText="Название квиза не может быть пустым" v-if="question.hasErrorInText"/>
+          </div>
+
+          <!-- Текст вопроса -->
+          <div class="w-full">
+            <label class="block text-xl w-full font-medium text-gray-700 mb-2">
+              Объяснение ответа (Опционально)
+            </label>
+            <textarea
+                v-model="question.textAlternative"
+                @change="markQuestionDirty(question)"
+                @input="validateQuestion(question)"
+                rows="3"
+                class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
+                placeholder="Введите текст объяснение ответа"
+            />
+            <ValidationErrorComponent
+                errorText="Объяснение ответа либо пустое либо соджержит символы отличные от пробела"
+                v-if="question.hasErrorInTextAlternative"/>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-baseline mb-4 w-full gap-5">
+          <div class="w-full p-2 border border-gray-400 rounded-xl">
+            <div class="flex justify-between items-center mb-1">
+              <div class="text-sm font-medium text-gray-700">Файл вопроса</div>
+              <CircleX class="hover:text-red-500" :size="24" @click="removeImage(question)"/>
             </div>
-            <input v-model="answer.optionText"
-                   @change="markQuestionDirty(question)"
-                   @input="validateQuestion(question)"
-                   type="text"
-                   class="flex-1 text-xl p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="Введите вариант ответа"/>
-            <CircleX class="hover:text-red-500 ml-3" :size="32" @click="removeAnswer(questionIndex, answerIndex)"/>
+            <img v-if="question.imageId" :src="'/api/quiz/image/' + question.imageId" class="w-full mb-2">
+            <input type="file" @change="handleFileUpload($event, question, id => question.imageId = id)"
+                   class="w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:text-sm file:font-semibold hover:file:bg-blue-200"/>
+          </div>
+          <div class="w-full p-2 border border-gray-400 rounded-xl">
+            <div class="flex flex-row justify-between items-center mb-1">
+              <label class="text-sm font-medium text-gray-700">Файл объяснения ответа</label>
+              <CircleX class="hover:text-red-500" :size="24" @click="removeImageAlternative(question)"/>
+            </div>
+            <img v-if="question.imageAlternativeId" :src="'/api/quiz/image/' + question.imageAlternativeId"
+                 class="w-full mb-2">
+            <input type="file" @change="handleFileUpload($event, question, id => question.imageAlternativeId = id)"
+                   class="block w-full text-sm text-black file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:text-sm file:font-semibold hover:file:bg-blue-200"/>
           </div>
         </div>
-      </div>
 
-      <!-- Кнопка сохранения вопроса -->
-      <div v-if="question.isDirty" class="flex justify-end text-xl font-medium text-red-600">
-        Вопрос не сохранён.
-      </div>
-    </LiquidGlass>
-
-    <LiquidGlass>
-      <!-- Кнопки управления -->
-      <div class="flex justify-between gap-4 mt-8 mb-8">
-        <button @click="addQuestion" class="text-blue-600 hover:text-blue-800 text-xl font-medium">+ Добавить вопрос
-        </button>
-        <div class="flex flex-col items-start gap-3">
-          <div v-if="isNotSavableQuiz(quiz)" class="flex justify-end text-xl font-medium text-red-600">
-            Квиз содержит ошибки.
+        <!-- Ответы -->
+        <div class="mb-4">
+          <div class="flex justify-between items-center mb-4">
+            <label class="block font-medium text-gray-700 text-2xl">Ответы</label>
+            <button @click="addAnswer(question)" class="text-blue-600 hover:text-blue-800 text-sm font-medium">+
+              Добавить
+              ответ
+            </button>
           </div>
-          <button @click="saveAllQuestions"
-                  v-if="quiz.isDirty"
-                  :disabled="savingAll || isNotSavableQuiz(quiz)"
-                  :class="['w-full p-2 border rounded-xl transition-all duration-100 font-medium', {
-                  'bg-green-100 hover:bg-green-600': quiz.isDirty && !isNotSavableQuiz(quiz),
-                  'bg-gray-200': isNotSavableQuiz(quiz)
-                }]">
-            {{ savingAll ? 'Сохранение...' : 'Сохранить' }}
+
+          <div v-for="(answer, answerIndex) in question.answers" :key="answer.viewId" :class="[ 'flex flex-col gap-3 mb-2', {
+            'p-3 border rounded-xl border-red-700': answer.textValidationError,
+          }]">
+            <label class="text-sm w-full font-medium text-red-700 mb-2" v-if="answer.textValidationError">
+              Пустой ответ
+            </label>
+            <div class="flex items-center gap-3">
+              <div class="relative inline-flex items-center w-12 h-12">
+                <Transition name="slide-up">
+                  <CircleCheckBig v-if="answer.isCorrect" :size="32" class="text-green-500 absolute"/>
+                  <Circle v-else :size="32" class="text-red-500 absolute"
+                          @click="questionUpdateCorrect(question, answerIndex)"/>
+                </Transition>
+              </div>
+              <input v-model="answer.optionText"
+                     @change="markQuestionDirty(question)"
+                     @input="validateQuestion(question)"
+                     type="text"
+                     class="flex-1 text-xl p-2 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
+                     placeholder="Введите вариант ответа"/>
+              <CircleX class="hover:text-red-500 ml-3" :size="32" @click="removeAnswer(questionIndex, answerIndex)"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопка сохранения вопроса -->
+        <div v-if="question.isDirty" class="flex justify-end text-xl font-medium text-red-600">
+          Вопрос не сохранён.
+        </div>
+      </LiquidGlass>
+
+      <LiquidGlass>
+        <!-- Кнопки управления -->
+        <div class="flex justify-between gap-4">
+          <button @click="addQuestion" class="text-blue-600 hover:text-blue-800 text-xl font-medium my-2 mx-4">
+            + Добавить вопрос
           </button>
+          <div class="flex flex-col items-start gap-3 my-2">
+            <div v-if="isNotSavableQuiz(quiz)" class="flex justify-end text-xl font-medium text-red-600">
+              Квиз содержит ошибки
+            </div>
+            <button @click="saveAllQuestions"
+                    v-if="quiz.isDirty"
+                    :disabled="savingAll || isNotSavableQuiz(quiz)"
+                    :class="['w-full py-2 px-4 border rounded-xl transition-all duration-100 font-medium', {
+                    'bg-green-100 hover:bg-green-300': quiz.isDirty && !isNotSavableQuiz(quiz),
+                    'bg-gray-200': isNotSavableQuiz(quiz)
+                  }]">
+              {{ savingAll ? 'Сохранение...' : 'Сохранить' }}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <label
-          class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded-3xl border-yellow-500 bg-yellow-50"
-          v-if="quiz.isDirty">
-        Квиз не сохранён!
-      </label>
+        <label
+            class="w-full block text-center text-2xl font-medium text-black mb-2 p-3 border rounded-3xl border-yellow-500 bg-yellow-50"
+            v-if="quiz.isDirty">
+          Квиз не сохранён!
+        </label>
+      </LiquidGlass>
     </LiquidGlass>
-  </LiquidGlass>
+  </div>
 </template>
 
 <script setup lang="ts">
-import {CircleX, CircleCheckBig, Circle} from 'lucide-vue-next';
-import {ref, reactive, computed, onMounted} from 'vue'
+import { CircleX, CircleCheckBig, Circle } from 'lucide-vue-next';
+import { ref, reactive, computed, onMounted } from 'vue'
 import {
   type Answer, type AnswerEditor,
   isNotSavableQuiz, type Question, type QuestionEditor, type Quiz, type QuizEditor
 } from "@/model/QuizTypes.ts"
 import * as z from "zod"
-import {useRoute} from "vue-router";
+import { useRoute } from "vue-router";
 import LiquidGlass from "@/component/LiquidGlass.vue";
+import ValidationErrorComponent from '@/component/ValidationErrorComponent.vue'
 
 const route = useRoute();
 
@@ -418,7 +418,7 @@ const saveQuestion = async (question: QuestionEditor) => {
 }
 
 const saveAllQuestions = async () => {
-  fetch(`/api/quiz/editor/${route.params.quizId}`, {
+  fetch(`/api/quiz/editor/${ route.params.quizId }`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -433,7 +433,7 @@ const saveAllQuestions = async () => {
 
 // Функции для загрузки данных с бэкенда
 const loadQuizFromBackend = async () => {
-  fetch(`/api/quiz/editor/${route.params.quizId}`)
+  fetch(`/api/quiz/editor/${ route.params.quizId }`)
       .then<Quiz>(res => res.json())
       .then<QuizEditor>(quiz => mapQuizToQuizEditor(quiz))
       .then(value => {

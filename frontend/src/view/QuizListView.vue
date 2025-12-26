@@ -20,8 +20,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col shrink items-center p-3 w-full xl:w-5xl gap-3 mx-auto">
-    <LiquidGlass class="w-full m-3 xm:w-3xl p-5">
+  <div class="flex flex-col shrink items-center p-3 w-full xl:w-6xl mx-auto">
+    <LiquidGlass class="w-full m-5 xm:w-3xl p-8">
       <LiquidGlass>
         <a href="/api/quiz/editor/create" target="_blank"
            class="block flex gap-3 items-center justify-center border p-3 rounded-xl text-2xl mb-3 text-center bg-green-100 hover:bg-green-600/30 transition-all duration-300">
