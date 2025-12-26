@@ -36,7 +36,7 @@
                    step="1" min="1"
                    @change="moveQuestionToPosition($event, question)"/>
           </div>
-          <CircleX @click="removeQuestion(questionIndex)" class="hover:text-red-500" :size="32"/>
+          <CircleX @click="removeQuestion(questionIndex)" class="hover:text-rose-700" :size="32"/>
         </div>
 
         <div class="flex justify-between items-center mb-4 w-full gap-3">
@@ -53,10 +53,10 @@
                 class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
                 placeholder="Введите текст вопроса"
             />
-            <ValidationErrorComponent errorText="Название квиза не может быть пустым" v-if="question.hasErrorInText"/>
+            <ValidationErrorComponent errorText="Текст вопроса не может быть пустым" v-if="question.hasErrorInText"/>
           </div>
 
-          <!-- Текст вопроса -->
+          <!-- Текст объяснения -->
           <div class="w-full">
             <label class="block text-xl w-full font-medium text-gray-700 mb-2">
               Объяснение ответа (Опционально)
@@ -67,10 +67,10 @@
                 @input="validateQuestion(question)"
                 rows="3"
                 class="w-full p-3 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
-                placeholder="Введите текст объяснение ответа"
+                placeholder="Введите текст объяснения ответа"
             />
             <ValidationErrorComponent
-                errorText="Объяснение ответа либо пустое либо соджержит символы отличные от пробела"
+                errorText="Объяснение ответа либо пустое либо содержит символы отличные от пробела"
                 v-if="question.hasErrorInTextAlternative"/>
           </div>
         </div>
@@ -79,7 +79,7 @@
           <div class="w-full p-2 border border-gray-400 rounded-xl">
             <div class="flex justify-between items-center mb-1">
               <div class="text-sm font-medium text-gray-700">Файл вопроса</div>
-              <CircleX class="hover:text-red-500" :size="24" @click="removeImage(question)"/>
+              <CircleX class="hover:text-rose-700" :size="24" @click="removeImage(question)"/>
             </div>
             <img v-if="question.imageId" :src="'/api/quiz/image/' + question.imageId" class="w-full mb-2">
             <input type="file" @change="handleFileUpload($event, question, id => question.imageId = id)"
@@ -88,7 +88,7 @@
           <div class="w-full p-2 border border-gray-400 rounded-xl">
             <div class="flex flex-row justify-between items-center mb-1">
               <label class="text-sm font-medium text-gray-700">Файл объяснения ответа</label>
-              <CircleX class="hover:text-red-500" :size="24" @click="removeImageAlternative(question)"/>
+              <CircleX class="hover:text-rose-700" :size="24" @click="removeImageAlternative(question)"/>
             </div>
             <img v-if="question.imageAlternativeId" :src="'/api/quiz/image/' + question.imageAlternativeId"
                  class="w-full mb-2">
@@ -108,16 +108,13 @@
           </div>
 
           <div v-for="(answer, answerIndex) in question.answers" :key="answer.viewId" :class="[ 'flex flex-col gap-3 mb-2', {
-            'p-3 border rounded-xl border-red-700': answer.textValidationError,
+            'p-3 bg-rose-100 border rounded-xl border-rose-700': answer.textValidationError
           }]">
-            <label class="text-sm w-full font-medium text-red-700 mb-2" v-if="answer.textValidationError">
-              Пустой ответ
-            </label>
             <div class="flex items-center gap-3">
               <div class="relative inline-flex items-center w-12 h-12">
                 <Transition name="slide-up">
                   <CircleCheckBig v-if="answer.isCorrect" :size="32" class="text-green-500 absolute"/>
-                  <Circle v-else :size="32" class="text-red-500 absolute"
+                  <Circle v-else :size="32" class="text-rose-700 absolute"
                           @click="questionUpdateCorrect(question, answerIndex)"/>
                 </Transition>
               </div>
@@ -127,14 +124,15 @@
                      type="text"
                      class="flex-1 text-xl p-2 border border-gray-400 rounded-xl shadow-sm focus:ring-blue-200 focus:border-blue-200"
                      placeholder="Введите вариант ответа"/>
-              <CircleX class="hover:text-red-500 ml-3" :size="32" @click="removeAnswer(questionIndex, answerIndex)"/>
+              <CircleX class="hover:text-rose-700 ml-3" :size="32" @click="removeAnswer(questionIndex, answerIndex)"/>
             </div>
+            <ValidationErrorComponent errorText="Пустой ответ" v-if="answer.textValidationError" />
           </div>
         </div>
 
-        <!-- Кнопка сохранения вопроса -->
-        <div v-if="question.isDirty" class="flex justify-end text-xl font-medium text-red-600">
-          Вопрос не сохранён.
+        <!-- Уведомление о несохранённом вопросе -->
+        <div v-if="question.isDirty" class="flex justify-end">
+          <ValidationErrorComponent errorText="Вопрос не сохранён"/>
         </div>
       </LiquidGlass>
 
@@ -145,9 +143,7 @@
             + Добавить вопрос
           </button>
           <div class="flex flex-col items-start gap-3 my-2">
-            <div v-if="isNotSavableQuiz(quiz)" class="flex justify-end text-xl font-medium text-red-600">
-              Квиз содержит ошибки
-            </div>
+            <ValidationErrorComponent errorText="Квиз содержит ошибки" v-if="isNotSavableQuiz(quiz)"/>
             <button @click="saveAllQuestions"
                     v-if="quiz.isDirty"
                     :disabled="savingAll || isNotSavableQuiz(quiz)"
@@ -227,7 +223,7 @@ const initialQuizState = (): QuizEditor => {
         isDirty: true
       },
       {
-        text: 'Как создать перменную в Vue.js?',
+        text: 'Как создать переменную в Vue.js?',
         viewId: generateStrId(),
         textAlternative: null,
         hasErrorInText: false,
