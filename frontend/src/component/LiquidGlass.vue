@@ -2,7 +2,7 @@
   <div class="relative p-6 group">
     <!-- Main content -->
     <div
-        class="relative bg-white/50 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl shadow-black/5 overflow-hidden">
+        class="relative bg-white/50 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl shadow-black/5">
       <!-- Inner shine effect -->
       <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"/>
 

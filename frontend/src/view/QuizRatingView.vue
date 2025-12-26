@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import {inject, onMounted, ref} from 'vue'
-import {getRandomRating, type RatingItem} from "@/model/RatingItem.ts"
+import { inject, onMounted, ref } from 'vue'
+import { getRandomRating, type RatingItem } from "@/model/RatingItem.ts"
 import LiquidGlass from "@/component/LiquidGlass.vue";
-import {SocketService} from "@/service/SocketService.ts";
+import { SocketService } from "@/service/SocketService.ts";
 import gsap from "gsap";
 
 interface RankedItem {
@@ -139,8 +139,8 @@ const formatNumber = (value: number, showSign = false) => {
     maximumFractionDigits: 1
   })
 
-  if (value > 0 && showSign) return `+${formatted}`
-  if (value < 0) return `-${formatted}`
+  if (value > 0 && showSign) return `+${ formatted }`
+  if (value < 0) return `-${ formatted }`
 
   return formatted
 }
@@ -176,71 +176,68 @@ onMounted(() => {
 </script>
 
 <template>
-  <LiquidGlass class="rounded-xl w-full">
-    <div ref="container" class="rating-container">
-
-      <div class="flex w-full justify-between items-center p-3" v-if="showStartGameButtonRef">
-        <div class="text-center text-3xl">
-          Ожидание участников
-        </div>
-        <button
-            class="border bg-emerald-100 rounded-xl p-3 hover:bg-emerald-400 transition-all duration-300 text-2xl font-medium"
-            v-if="rankedItems.length > 0"
-            @click="onShowStartGameButton()">
-          Начать игру
-        </button>
+  <div ref="container" class="rating-container rounded-xl w-full">
+    <div class="flex w-full justify-between items-center p-3" v-if="showStartGameButtonRef">
+      <div class="text-center text-3xl">
+        Ожидание игроков
       </div>
-      <TransitionGroup name="list" tag="div" class="space-y-3">
-        <div v-for="item in rankedItems"
-             :key="item.id"
-             :id="`item-${item.id}`"
-             class="rating-item"
-             :class="[ 'hover:bg-gray-300', {
+      <button
+          class="border bg-emerald-100 rounded-xl p-3 hover:bg-emerald-400 transition-all duration-300 text-2xl font-medium"
+          v-if="rankedItems.length > 0"
+          @click="onShowStartGameButton()">
+        Начать игру
+      </button>
+    </div>
+    <TransitionGroup name="list" tag="div" class="space-y-3">
+      <div v-for="item in rankedItems"
+           :key="item.id"
+           :id="`item-${item.id}`"
+           class="rating-item"
+           :class="[ 'hover:bg-gray-300', {
             'bg-gradient-to-r from-sky-700/80 to-green-300/50': item.index == 1,
             'bg-gradient-to-r from-sky-500/70 to-green-200/50': item.index == 2,
             'bg-gradient-to-r from-sky-300/70 to-green-200/50': item.index == 3,
             'bg-gradient-to-r from-gray-300/70 to-white/50': item.index > 3
            }]"
-             :style="{transition: 'all 0.3s eazy', zIndex: 100 - item.position}">
+           :style="{transition: 'all 0.3s eazy', zIndex: 100 - item.position}">
 
-          <div class="flex items-center justify-between px-5 py-3">
-            <div class="flex items-center space-x-4">
-              <div class="flex flex-col items-center">
-                <span class="w-8 text-2xl font-bold text-gray-800 tektur-badge">{{ item.index }}.</span>
-              </div>
-              <div class="flex items-center space-x-3">
-                <div>
-                  <h3 class="text-2xl font-semibold text-gray-900 montserrat-person">{{ item.item.username }}</h3>
-                </div>
+        <div class="flex items-center justify-between px-5 py-3">
+          <div class="flex items-center space-x-4">
+            <div class="flex flex-col items-center">
+              <span class="w-8 text-2xl font-bold text-gray-800 tektur-badge">{{ item.index }}.</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div>
+                <h3 class="text-2xl font-semibold text-gray-900 montserrat-person">{{ item.item.username }}</h3>
               </div>
             </div>
+          </div>
 
-            <div class="flex gap-10 justify-end items-center">
-              <div class="flex items-center space-x-6">
-                <div class="text-right">
-                  <div class="text-2xl font-bold text-gray-900">
-                    <span class="iconify tektur-badge" data-inline="false">{{ formatNumber(item.item.rating) }}</span>
-                  </div>
-                  <div class="text-md text-gray-500 tektur-badge">Рейтинг</div>
+          <div class="flex gap-10 justify-end items-center">
+            <div class="flex items-center space-x-6">
+              <div class="text-right">
+                <div class="text-2xl font-bold text-gray-900">
+                  <span class="iconify tektur-badge" data-inline="false">{{ formatNumber(item.item.rating) }}</span>
                 </div>
+                <div class="text-md text-gray-500 tektur-badge">Рейтинг</div>
               </div>
-              <div class="flex items-center space-x-6" v-if="item.diff != 0">
-                <div class="text-start">
-                  <div :class="[ 'text-2xl font-bold tektur-badge', {
+            </div>
+            <div class="flex items-center space-x-6" v-if="item.diff != 0">
+              <div class="text-start">
+                <div :class="[ 'text-2xl font-bold tektur-badge', {
                     'text-green-900': item.diff > 0,
                     'text-red-900': item.diff < 0
                     }]">
-                    {{ formatNumber(item.diff) }}
-                  </div>
-                  <div class="text-sm text-gray-500">Результат раунда</div>
+                  {{ formatNumber(item.diff) }}
                 </div>
+                <div class="text-sm text-gray-500">Результат раунда</div>
               </div>
             </div>
           </div>
         </div>
-      </TransitionGroup>
-    </div>
-  </LiquidGlass>
+      </div>
+    </TransitionGroup>
+  </div>
 </template>
 
 <style scoped>
@@ -276,9 +273,9 @@ onMounted(() => {
 }
 
 .montserrat-person {
-               font-family: "Montserrat", sans-serif;
-               font-optical-sizing: auto;
-               font-weight: bold;
-               font-style: normal;
-             }
+  font-family: "Montserrat", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: bold;
+  font-style: normal;
+}
 </style>

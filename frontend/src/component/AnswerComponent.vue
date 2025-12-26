@@ -144,7 +144,7 @@ const select = (id: string) => {
           <!-- Option letter/number -->
           <div
               :class="[
-              'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold transition-all duration-300',
+              'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all duration-300',
               'bg-gradient-to-br from-gray-100 to-gray-50 text-gray-800',
               'group-hover:from-blue-100 group-hover:to-blue-50',
               {

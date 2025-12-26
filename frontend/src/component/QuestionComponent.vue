@@ -14,7 +14,7 @@ defineProps<Question>();
     <div class="relative p-6 border-b border-gray-200/50">
       <div class="flex items-center gap-3">
         <div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"/>
-        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 class="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           Вопрос
         </h1>
       </div>
@@ -25,7 +25,7 @@ defineProps<Question>();
       <div class="flex flex-col lg:flex-row gap-8 items-start">
         <!-- Question text -->
         <div class="flex-1">
-          <p class="text-2xl md:text-3xl lg:text-4xl font-semibold text-gray-800 leading-tight">
+          <p class="text-xl md:text-2xl lg:text-4xl font-semibold text-gray-800 leading-tight">
             {{ text }}
           </p>
         </div>
