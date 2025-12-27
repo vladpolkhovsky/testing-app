@@ -25,7 +25,7 @@ defineProps<Question>();
       <div class="flex flex-col lg:flex-row gap-8 items-start">
         <!-- Question text -->
         <div class="flex-1">
-          <p class="text-xl md:text-2xl lg:text-4xl font-semibold text-gray-800 leading-tight">
+          <p class="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-800 leading-tight">
             {{ text }}
           </p>
         </div>
@@ -39,8 +39,8 @@ defineProps<Question>();
             <!-- Image -->
             <img
                 :src="`/api/quiz/image/${imageId}`"
-                alt="Вопрос изображение"
-                class="relative w-full max-w-xs md:max-w-sm lg:max-w-md rounded-xl transform group-hover:scale-[1.02] transition duration-500"
+                alt="Картинка вопроса"
+                class="relative w-full max-w-xs md:max-w-sm lg:max-w-sm rounded-xl transform group-hover:scale-[1.02] transition duration-500"
                 loading="lazy"
             />
 
