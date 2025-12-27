@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
 
 @Data
 @Builder
@@ -13,6 +14,10 @@ public class QuizContext {
 
     private String id;
     private QuizDto quiz;
+
+    private ScheduledFuture<?> roundStartFuture;
+    private ScheduledFuture<?> roundTimeoutFuture;
+    private ScheduledFuture<?> discussionFuture;
 
     @Builder.Default
     private Map<UUID, Set<QuestionAnswer>> questionAnswers = new HashMap<>();
@@ -42,6 +47,12 @@ public class QuizContext {
             int index = quiz.getQuestions().indexOf(questionDto);
             return index > -1 ? index : null;
         });
+    }
+
+    public void cancelAllFutures() {
+        if (roundStartFuture != null) roundStartFuture.cancel(false);
+        if (roundTimeoutFuture != null) roundTimeoutFuture.cancel(false);
+        if (discussionFuture != null) discussionFuture.cancel(false);
     }
 
     @Data

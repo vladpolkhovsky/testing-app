@@ -7,6 +7,7 @@ import by.vppolkhovsky.tests_app.dto.jpa.QuizV1;
 import by.vppolkhovsky.tests_app.dto.jpa.QuizVersion;
 import by.vppolkhovsky.tests_app.jpa.entity.QuizEntity;
 import by.vppolkhovsky.tests_app.jpa.repository.QuizRepository;
+import by.vppolkhovsky.tests_app.jpa.repository.UserRepository;
 import by.vppolkhovsky.tests_app.mapper.QuizRestMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,12 @@ public class QuizJpaService {
 
     private final QuizRepository quizRepository;
     private final QuizRestMapper quizRestMapper;
+    private final UserRepository userRepository;
 
-    public QuizJpaService(QuizRepository quizRepository, QuizRestMapper quizRestMapper) {
+    public QuizJpaService(QuizRepository quizRepository, QuizRestMapper quizRestMapper, UserRepository userRepository) {
         this.quizRepository = quizRepository;
         this.quizRestMapper = quizRestMapper;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +42,7 @@ public class QuizJpaService {
     }
 
     @Transactional
-    public QuizDto save(UUID id, QuizDto quiz) {
+    public QuizDto save(UUID id, QuizDto quiz, UUID userId) {
         Optional<QuizEntity> foundById = quizRepository.findById(id);
 
         QuizEntity entity;
@@ -63,6 +66,7 @@ public class QuizJpaService {
         entity.setTitle(quizV1.getTitle());
         entity.setQuizVersion(QuizVersion.V1);
         entity.setContent(quizV1);
+        entity.setCreatedBy(userRepository.findById(userId).orElse(null));
 
         entity = quizRepository.save(entity);
 
@@ -70,9 +74,11 @@ public class QuizJpaService {
     }
 
     @Transactional(readOnly = true)
-    public List<QuizRegistryDto> list() {
-        return quizRepository.findTop100ByOrderByUpdatedAtDesc().map(quiz -> QuizRegistryDto.builder()
+    public List<QuizRegistryDto> list(UUID userId) {
+        return quizRepository.findUserQuizzes(userId).map(quiz -> QuizRegistryDto.builder()
                 .title(quiz.getTitle())
+                .questionCount(quiz.getContent().getQuestions().size())
+                .createdAt(quiz.getCreatedAt())
                 .id(quiz.getId())
                 .build())
             .toList();

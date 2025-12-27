@@ -4,26 +4,29 @@ import by.vppolkhovsky.tests_app.Creator;
 import by.vppolkhovsky.tests_app.dto.QuizContext;
 import by.vppolkhovsky.tests_app.dto.QuizDto;
 import by.vppolkhovsky.tests_app.mapper.QuizMapper;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class QuizContextHolder {
 
+    private static RandomStringUtils RANDOM = RandomStringUtils.insecure();
     private final Map<String, QuizContext> quizContexts = new HashMap<>();
     private final Map<String, LocalDateTime> quizContextsLastUpdate = new HashMap<>();
     private final QuizMapper quizMapper;
 
     public QuizContextHolder(QuizMapper quizMapper) {
         this.quizMapper = quizMapper;
-    }
-
-    public QuizContext createContext(QuizDto quizDto) {
-        return createContext(UUID.randomUUID().toString(), quizDto);
     }
 
     public QuizContext createContext(String contextId, QuizDto quizDto) {
@@ -45,5 +48,29 @@ public class QuizContextHolder {
         }
         quizContextsLastUpdate.put(contextId, LocalDateTime.now());
         return quizContexts.get(contextId);
+    }
+
+    public String createContextId() {
+        while (true) {
+            String next = RANDOM.next(4, true, true);
+            if (!quizContexts.containsKey(next)) {
+                return next;
+            }
+        }
+    }
+
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
+    public void deleteOldContexts() {
+        LocalDateTime old = LocalDateTime.now().minusHours(2);
+
+        List<String> oldContextIds = quizContextsLastUpdate.entrySet().stream()
+            .filter(entry -> entry.getValue().isBefore(old))
+            .map(Map.Entry::getKey)
+            .toList();
+
+        oldContextIds.forEach(contextId -> {
+            quizContexts.remove(contextId);
+            quizContextsLastUpdate.remove(contextId);
+        });
     }
 }

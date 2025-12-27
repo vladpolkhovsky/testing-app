@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { inject, onMounted, ref } from 'vue'
 import { getRandomRating, type RatingItem } from "@/model/RatingItem.ts"
-import LiquidGlass from "@/component/LiquidGlass.vue";
 import { SocketService } from "@/service/SocketService.ts";
+import {CirclePlay} from "lucide-vue-next"
 import gsap from "gsap";
 
 interface RankedItem {
@@ -178,14 +178,14 @@ onMounted(() => {
 <template>
   <div ref="container" class="rating-container rounded-xl w-full">
     <div class="flex w-full justify-between items-center p-3" v-if="showStartGameButtonRef">
-      <div class="text-center text-3xl">
+      <div class="text-center text-3xl montserrat-person">
         Ожидание игроков
       </div>
       <button
-          class="border bg-emerald-100 rounded-xl p-3 hover:bg-emerald-400 transition-all duration-300 text-2xl font-medium"
+          class="flex items-center gap-3 text-2xl px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg"
           v-if="rankedItems.length > 0"
           @click="onShowStartGameButton()">
-        Начать игру
+        <CirclePlay /> Начать игру
       </button>
     </div>
     <TransitionGroup name="list" tag="div" class="space-y-3">
@@ -193,7 +193,7 @@ onMounted(() => {
            :key="item.id"
            :id="`item-${item.id}`"
            class="rating-item"
-           :class="[ 'hover:bg-gray-300', {
+           :class="[ 'hover:bg-green-500', {
             'bg-gradient-to-r from-sky-700/80 to-green-300/50': item.index == 1,
             'bg-gradient-to-r from-sky-500/70 to-green-200/50': item.index == 2,
             'bg-gradient-to-r from-sky-300/70 to-green-200/50': item.index == 3,

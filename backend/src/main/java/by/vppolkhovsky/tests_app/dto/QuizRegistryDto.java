@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -14,4 +15,6 @@ import java.util.UUID;
 public class QuizRegistryDto {
     private UUID id;
     private String title;
+    private Integer questionCount;
+    private LocalDateTime createdAt;
 }

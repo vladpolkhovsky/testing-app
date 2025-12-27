@@ -1,5 +1,6 @@
 package by.vppolkhovsky.tests_app.controller;
 
+import by.vppolkhovsky.tests_app.controller.argresolver.JwtToken;
 import by.vppolkhovsky.tests_app.dto.QuizDto;
 import by.vppolkhovsky.tests_app.dto.QuizRegistryDto;
 import by.vppolkhovsky.tests_app.services.QuizContextHolder;
@@ -31,9 +32,19 @@ public class QuizRestController {
     }
 
     @GetMapping("/create")
-    public ResponseEntity<Void> create() {
+    public ResponseEntity<Void> create(@JwtToken UUID userId) {
+        if (userId == null) {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setLocation(URI.create("/login-user"));
+
+            return ResponseEntity.status(HttpStatus.SEE_OTHER)
+                .headers(httpHeaders)
+                .build();
+        }
+
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(URI.create("/editor/" + UUID.randomUUID()));
+
         return ResponseEntity.status(HttpStatus.SEE_OTHER)
             .headers(httpHeaders)
             .build();
@@ -45,8 +56,8 @@ public class QuizRestController {
     }
 
     @PostMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<QuizDto> save(@PathVariable UUID id, @RequestBody QuizDto quiz) {
-        return ResponseEntity.ok(quizJpaService.save(id, quiz));
+    public ResponseEntity<QuizDto> save(@PathVariable UUID id, @RequestBody QuizDto quiz, @JwtToken UUID userId) {
+        return ResponseEntity.ok(quizJpaService.save(id, quiz, userId));
     }
 
     @Transactional(readOnly = true)
@@ -56,8 +67,8 @@ public class QuizRestController {
         httpHeaders.setLocation(URI.create("/"));
 
         quizJpaService.get(id).ifPresent((quiz) -> {
-            String contextId = Integer.toHexString(Math.abs(UUID.randomUUID().hashCode()));
-            httpHeaders.setLocation(URI.create("/game/" + contextId));
+            String contextId = quizContextHolder.createContextId();
+            httpHeaders.setLocation(URI.create("/g/" + contextId));
             quizContextHolder.createContext(contextId, quiz);
         });
 
@@ -80,7 +91,10 @@ public class QuizRestController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<QuizRegistryDto>> list() {
-        return ResponseEntity.ok(quizJpaService.list());
+    public ResponseEntity<List<QuizRegistryDto>> list(@JwtToken UUID userId) {
+        if (userId == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(quizJpaService.list(userId));
     }
 }

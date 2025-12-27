@@ -61,7 +61,7 @@ const select = (id: string) => {
 <template>
   <div class="flex flex-col gap-4">
     <!-- Answer options -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+    <div class="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6">
       <div
           v-for="(option, index) in answerOptions"
           :key="option.id"
@@ -170,8 +170,7 @@ const select = (id: string) => {
     </div>
 
     <!-- Submit button -->
-    <button
-        v-if="selectedId && !isShowOnlyCorrect"
+    <button v-if="selectedId && !isShowOnlyCorrect"
         @click="sent(selectedId)"
         :disabled="isSent"
         :class="[
@@ -186,8 +185,7 @@ const select = (id: string) => {
       ]"
     >
       <!-- Shine effect -->
-      <div
-          v-if="!isSent"
+      <div v-if="!isSent"
           class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:translate-x-full transition-transform duration-1000"
       />
 

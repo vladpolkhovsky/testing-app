@@ -32,6 +32,7 @@ dependencies {
 	implementation("io.hypersistence:hypersistence-utils-hibernate-71:3.14.1")
 	implementation("org.mapstruct:mapstruct:1.6.3")
 	implementation("org.apache.commons:commons-lang3:3.20.0")
+	implementation("at.favre.lib:bcrypt:0.10.2")
 
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")

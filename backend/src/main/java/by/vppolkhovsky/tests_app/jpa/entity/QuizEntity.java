@@ -3,14 +3,7 @@ package by.vppolkhovsky.tests_app.jpa.entity;
 import by.vppolkhovsky.tests_app.dto.jpa.QuizV1;
 import by.vppolkhovsky.tests_app.dto.jpa.QuizVersion;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -49,4 +42,8 @@ public class QuizEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false, columnDefinition = "timestamp")
     private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private UserEntity createdBy;
 }

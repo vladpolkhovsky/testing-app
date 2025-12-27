@@ -7,7 +7,7 @@
       <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"/>
 
       <!-- Content slot -->
-      <div class="p-6">
+      <div class="p-3">
         <slot/>
       </div>
 

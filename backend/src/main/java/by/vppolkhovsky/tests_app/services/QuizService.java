@@ -12,10 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Slf4j
 @Service
@@ -79,26 +76,58 @@ public class QuizService {
 
         notifyShowMessageMessage(context);
 
-        CompletableFuture.runAsync(() -> {
-            }, CompletableFuture.delayedExecutor(TIME_START_DELEY, TimeUnit.SECONDS, executor))
-            .thenRunAsync(() -> notify(contextId, WsStartStopRoundMessageDto.start(context.getCurrentQuestionId(), ROUND_TIME, context.getCurrentRound())), executor)
-            .thenRunAsync(() -> {
-            }, CompletableFuture.delayedExecutor(ROUND_TIME, TimeUnit.SECONDS, executor))
-            .thenRunAsync(() -> {
-                WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(context.getCurrentQuestionId(), context.getCurrentRound(), context.getCurrentRound() + 1 > context.getMaxRounds());
+        // Запускаем старт раунда через TIME_START_DELEY секунд
+        ScheduledFuture<?> startFuture = executor.schedule(() -> {
+            notify(contextId, WsStartStopRoundMessageDto.start(
+                context.getCurrentQuestionId(),
+                ROUND_TIME,
+                context.getCurrentRound()
+            ));
 
-                context.getCurrentQuestion().ifPresent(q -> {
-                    stopMessage.setTextAlternative(StringUtils.trimToNull(q.getTextAlternative()));
-                    stopMessage.setImageAlternativeId(StringUtils.trimToNull(q.getImageAlternativeId()));
-                });
+            // Запускаем таймер остановки раунда через ROUND_TIME секунд
+            context.setRoundTimeoutFuture(executor.schedule(() -> sendStopMessage(contextId), ROUND_TIME, TimeUnit.SECONDS));
 
-                notify(contextId, stopMessage);
-            }, executor)
-            .thenRunAsync(() -> {
-            }, CompletableFuture.delayedExecutor(DISCUSSION_DELAY, TimeUnit.SECONDS, executor))
-            .thenRunAsync(() -> stopRound(contextId), executor);
+        }, TIME_START_DELEY, TimeUnit.SECONDS);
 
-        log.info("Start round {}", contextId);
+        context.setRoundStartFuture(startFuture);
+
+        log.info("Start round scheduled {}", contextId);
+    }
+
+    /**
+     * Метод для отправки сообщения STOP и запуска discussion таймера
+     */
+    private void sendStopMessage(String contextId) {
+        QuizContext context = quizContextHolder.getContext(contextId);
+
+        WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(
+            context.getCurrentQuestionId(),
+            context.getCurrentRound(),
+            context.getCurrentRound() + 1 > context.getMaxRounds()
+        );
+
+        context.getCurrentQuestion().ifPresent(q -> {
+            stopMessage.setTextAlternative(StringUtils.trimToNull(q.getTextAlternative()));
+            stopMessage.setImageAlternativeId(StringUtils.trimToNull(q.getImageAlternativeId()));
+        });
+
+        notify(contextId, stopMessage);
+
+        // Запускаем discussion таймер
+        context.setDiscussionFuture(executor.schedule(() -> stopRound(contextId), DISCUSSION_DELAY, TimeUnit.SECONDS));
+    }
+
+    /**
+     * Метод для принудительной остановки раунда (раньше времени)
+     */
+    public void triggerStopRound(String contextId) {
+        QuizContext context = quizContextHolder.getContext(contextId);
+
+        if (context.getRoundTimeoutFuture() != null && !context.getRoundTimeoutFuture().isDone()) {
+            context.getRoundTimeoutFuture().cancel(false);
+        }
+
+        sendStopMessage(contextId);
     }
 
     public void stopRound(String contextId) {
@@ -158,6 +187,7 @@ public class QuizService {
 
     public void saveAnswer(String contextId, String userId, UUID answerId) {
         QuizContext context = quizContextHolder.getContext(contextId);
+
         if (context.getRoundStarted()) {
             UUID questionId = context.getCurrentQuestionId();
 
@@ -184,6 +214,10 @@ public class QuizService {
             }
 
             log.info("Save answer {}", answer);
+
+            if (context.getQuestionAnswers().get(questionId).size() == context.getUserRating().size()) {
+                triggerStopRound(contextId);
+            }
         }
     }
 

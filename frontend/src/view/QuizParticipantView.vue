@@ -94,16 +94,12 @@ const handleQuizRoundStopMessage = (message: QuizRoundMessage) => {
 </script>
 
 <template>
-  <div class="w-full max-w-2xl mx-auto">
+  <div class="w-full max-w-2xl mx-auto mt-3 px-3">
     <!-- User Info Header - Mobile Optimized -->
-    <LiquidGlass class="bg-white/70 w-full max-w-sm sm:max-w-md mx-auto p-6 sm:p-8 rounded-2xl">
+    <LiquidGlass class="bg-white/70 w-full lg:max-w-lg mx-auto sm:p-8 rounded-2xl">
       <div class="flex flex-col gap-10">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div class="flex items-center gap-3">
-            <div
-                class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg">
-              <UserIcon :size="18" class="sm:w-5 sm:h-5 md:w-6 md:h-6"/>
-            </div>
             <div class="flex-1 min-w-0">
               <h1 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 truncate">{{ user?.username }}</h1>
               <p class="text-xs sm:text-sm text-gray-600">Участник викторины</p>
