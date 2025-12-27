@@ -70,14 +70,14 @@
             </div>
 
             <!-- Active Round -->
-            <div v-else-if="gameState.roundStarted" key="active-round" class="flex flex-col gap-5">
+            <div v-if="gameState.roundStarted" key="active-round" class="flex flex-col gap-5">
               <QuestionComponent :text="gameState?.question?.text!" :image-id="gameState?.question?.imageId" ref="questionComponentRef"/>
               <Timer :seconds="gameState.duration" v-if="gameState.roundStarted && gameState.duration" ref="timerComponentRef" key="timer" class="mx-auto"/>
               <AnswerComponent :options="gameState?.answers!" ref="answerComponentRef"/>
             </div>
 
             <!-- Rating/Results -->
-            <QuizRatingView v-else key="rating" :items="gameState.rating" @round-update-ended="quizRatingShowNextRoundButton()" ref="quizRatingRef"/>
+            <QuizRatingView v-else="!gameState.roundStarted" key="rating" :items="gameState.rating" @round-update-ended="quizRatingShowNextRoundButton()" ref="quizRatingRef"/>
 
           </TransitionGroup>
         </LiquidGlass>
@@ -223,20 +223,25 @@ onMounted(() => {
   socketService.setOnEndQuizQuestionCallback(message => {
     gameState.gameFinished = message.gameFinished;
     gameState.currentRound = message.nextRound;
+
     if (gameState.question) {
       gameState.question.text = message.textAlternative ?? gameState.question.text;
       gameState.question.imageId = message.imageAlternativeId ?? gameState.question.imageId;
     }
+
     if (answerComponentRef.value) {
       answerComponentRef.value.showOnlyCorrect()
     }
+
     if (timerComponentRef.value) {
       timerComponentRef.value.hideTimer();
     }
   });
 
   socketService.setOnQuizUpdateRatingMessageCallback(message => {
+
     gameState.roundStarted = false;
+
     setTimeout(() => {
       if (quizRatingRef.value) quizRatingRef.value.updateModel(message.ratingItems);
     }, 1700)
