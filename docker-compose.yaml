@@ -15,11 +15,18 @@ services:
     profiles: [ "dev" ]
 
   nginx-prod:
-    image: nginx:alpine
+    image: umputun/nginx-le:latest
     container_name: nginx-proxy-prod
     restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Moscow
+      LETSENCRYPT: true
+      LE_EMAIL: ${LE_EMAIL}
+      LE_FQDN: ${LE_DOMAIN}
     volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx.prod.conf:/etc/nginx/service.conf
       - ./ssl:/etc/nginx/ssl
     ports:
       - "80:80"
