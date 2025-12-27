@@ -182,7 +182,7 @@ onMounted(() => {
         Ожидание игроков
       </div>
       <button
-          class="flex items-center gap-3 text-2xl px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg"
+          class="montserrat-person flex items-center gap-3 text-2xl px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg"
           v-if="rankedItems.length > 0"
           @click="onShowStartGameButton()">
         <CirclePlay /> Начать игру

@@ -201,6 +201,7 @@ onMounted(() => {
   socketService.setOnQuizShowNewQuestionMessageCallback(message => {
     gameState.question = message.question;
     gameState.answers = message.answers;
+    SoundEngine.nextTrack();
   });
 
   socketService.setOnStartQuizQuestionCallback(message => {
