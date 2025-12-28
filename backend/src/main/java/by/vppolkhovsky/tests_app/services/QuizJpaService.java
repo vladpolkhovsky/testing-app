@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -87,5 +88,15 @@ public class QuizJpaService {
     @Transactional
     public void delete(UUID id) {
         quizRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isUserHasAccessToQuiz(UUID id, UUID userId) {
+        Optional<QuizEntity> byId = quizRepository.findById(id);
+        if (byId.isEmpty()) {
+            return true;
+        }
+        QuizEntity entity = byId.get();
+        return Objects.equals(entity.getCreatedBy().getId(), userId);
     }
 }

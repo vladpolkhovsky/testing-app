@@ -21,7 +21,8 @@ export interface QuizEditor extends Quiz {
   questions: QuestionEditor[];
   hasErrorInTitle: boolean;
   isTitleDirty: boolean,
-  isDirty: boolean
+  isDirty: boolean,
+  authProblems: boolean,
 }
 
 export interface QuestionEditor extends Question {

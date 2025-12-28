@@ -51,12 +51,30 @@ public class QuizRestController {
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<QuizDto> get(@PathVariable UUID id) {
+    public ResponseEntity<QuizDto> get(@PathVariable UUID id, @JwtToken UUID userId) {
+        if (userId == null || !quizJpaService.isUserHasAccessToQuiz(id, userId)) {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setLocation(URI.create("/login-user"));
+
+            return ResponseEntity.status(HttpStatus.SEE_OTHER)
+                .headers(httpHeaders)
+                .build();
+        }
+
         return ResponseEntity.of(quizJpaService.get(id));
     }
 
     @PostMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<QuizDto> save(@PathVariable UUID id, @RequestBody QuizDto quiz, @JwtToken UUID userId) {
+        if (userId == null || !quizJpaService.isUserHasAccessToQuiz(id, userId)) {
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setLocation(URI.create("/login-user"));
+
+            return ResponseEntity.status(HttpStatus.SEE_OTHER)
+                .headers(httpHeaders)
+                .build();
+        }
+
         return ResponseEntity.ok(quizJpaService.save(id, quiz, userId));
     }
 

@@ -20,8 +20,8 @@ import java.util.concurrent.*;
 public class QuizService {
 
     private static int TIME_START_DELEY = 1;
-    private static int ROUND_TIME = 20;
-    private static int DISCUSSION_DELAY = 10;
+    private static int ROUND_TIME = 25;
+    private static int DISCUSSION_DELAY = 12;
 
     private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 

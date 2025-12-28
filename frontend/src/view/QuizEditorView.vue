@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col shrink items-center p-3 w-full xl:w-6xl mx-auto">
-    <LiquidGlass class="w-full m-5 xm:w-3xl p-8 flex flex-col gap-8">
+    <LiquidGlass class="w-full m-5 xm:w-3xl p-8 flex flex-col gap-8" v-if="!quiz.authProblems">
       <!-- Заголовок квиза -->
       <LiquidGlass class="p-6">
         <div
@@ -407,20 +407,36 @@
         </div>
       </LiquidGlass>
     </LiquidGlass>
+    <LiquidGlass v-else class="w-full m-5 xm:w-3xl p-8 flex flex-col gap-8">
+      <LiquidGlass class="p-3">
+        <div class="flex justify-between w-full items-center">
+          <h1 class="inline text-2xl font-medium m-3">У вас нет доступа к данному квизу</h1>
+          <div class="flex justify-end">
+            <a href="/login-user"
+               class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg group/play">
+              <LogIn :size="20" class="group-hover/play:scale-110 transition-transform duration-300"/>
+              <span>Войти</span>
+            </a>
+          </div>
+        </div>
+      </LiquidGlass>
+    </LiquidGlass>
+    <Toaster/>
   </div>
 </template>
 
 <script setup lang="ts">
-import { CircleX, CircleCheckBig, Circle } from 'lucide-vue-next';
-import { ref, reactive, computed, onMounted } from 'vue'
+import {CircleX, CircleCheckBig, Circle, LogIn} from 'lucide-vue-next';
+import {ref, reactive, computed, onMounted} from 'vue'
 import {
   type Answer, type AnswerEditor,
   isNotSavableQuiz, type Question, type QuestionEditor, type Quiz, type QuizEditor
 } from "@/model/QuizTypes.ts"
 import * as z from "zod"
-import { useRoute } from "vue-router";
+import {useRoute} from "vue-router";
 import LiquidGlass from "@/component/LiquidGlass.vue";
 import ValidationErrorComponent from '@/component/ValidationErrorComponent.vue'
+import {Toaster, toast} from "vue-sonner";
 
 const route = useRoute();
 
@@ -438,6 +454,7 @@ function generateStrId() {
 // Начальное состояние квиза
 const initialQuizState = (): QuizEditor => {
   return {
+    authProblems: false,
     id: null,
     title: 'Мой первый квиз',
     hasErrorInTitle: false,
@@ -658,12 +675,20 @@ const saveQuestion = async (question: QuestionEditor) => {
 }
 
 const saveAllQuestions = async () => {
-  fetch(`/api/quiz/editor/${ route.params.quizId }`, {
+  fetch(`/api/quiz/editor/${route.params.quizId}`, {
     method: 'POST',
+    redirect: "manual",
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(quiz)
+  }).then(res => {
+    if (res.status != 200) {
+      quiz.authProblems = true;
+      toast.error("У вас нет доступа к квизу!")
+      throw new Error();
+    }
+    return res;
   }).then<Quiz>(res => res.json())
       .then<QuizEditor>(quiz => mapQuizToQuizEditor(quiz))
       .then(value => {
@@ -673,8 +698,16 @@ const saveAllQuestions = async () => {
 
 // Функции для загрузки данных с бэкенда
 const loadQuizFromBackend = async () => {
-  fetch(`/api/quiz/editor/${ route.params.quizId }`)
-      .then<Quiz>(res => res.json())
+  fetch(`/api/quiz/editor/${route.params.quizId}`, {
+    redirect: "manual"
+  }).then(res => {
+    if (res.status != 200) {
+      quiz.authProblems = true;
+      toast.error("У вас нет доступа к квизу!")
+      throw new Error();
+    }
+    return res;
+  }).then<Quiz>(res => res.json())
       .then<QuizEditor>(quiz => mapQuizToQuizEditor(quiz))
       .then(value => {
         Object.assign(quiz, value);
@@ -699,7 +732,8 @@ const mapQuizToQuizEditor = (quiz: Quiz): QuizEditor => {
     })),
     hasErrorInTitle: false,
     isDirty: false,
-    isTitleDirty: false
+    isTitleDirty: false,
+    authProblems: false
   })
 }
 
