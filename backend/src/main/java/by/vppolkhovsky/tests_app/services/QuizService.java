@@ -211,13 +211,13 @@ public class QuizService {
                     .findAny().ifPresent(user -> {
                         notify(contextId, WsAnswerSavedDto.of(user.getUsername()));
                     });
+
+                if (context.getQuestionAnswers().get(questionId).size() == context.getUserRating().size()) {
+                    triggerStopRound(contextId);
+                }
             }
 
             log.info("Save answer {}", answer);
-
-            if (context.getQuestionAnswers().get(questionId).size() == context.getUserRating().size()) {
-                triggerStopRound(contextId);
-            }
         }
     }
 
