@@ -19,7 +19,7 @@ const timerRef = useTemplateRef<InstanceType<typeof Timer>>("timerRef")
 
     <!-- Question content -->
     <div class="relative p-4 lg:p-8">
-      <div class="flex flex-col lg:flex-row gap-3 items-start">
+      <div class="flex flex-row flex-wrap gap-3 items-start">
 
         <div class="flex-1">
           <div class="relative p-1 mb-2 border-b border-gray-200/50 flex justify-between">
@@ -30,7 +30,7 @@ const timerRef = useTemplateRef<InstanceType<typeof Timer>>("timerRef")
             </div>
           </div>
 
-          <p class="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-800 leading-tight">
+          <p class="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-800 leading-tight min-w-75">
             {{ text }}
           </p>
         </div>
@@ -47,7 +47,7 @@ const timerRef = useTemplateRef<InstanceType<typeof Timer>>("timerRef")
               <!-- Image -->
               <img :src="`/api/quiz/image/${imageId}`"
                    alt="Картинка вопроса"
-                   class="relative max-w-[800px] max-h-[700px] hover:max-h-[900px]rounded-xl transform group-hover:scale-[1.02] transition duration-500"
+                   class="relative min-w-75 min-h-100 max-w-full max-h-145 hover:max-h-175 hover:min-w-95 rounded-xl transform group-hover:scale-[1.02] transition duration-500"
                    loading="lazy"
               />
 
