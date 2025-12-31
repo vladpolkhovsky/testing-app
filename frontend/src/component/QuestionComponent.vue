@@ -25,7 +25,8 @@ const timerRef = useTemplateRef<InstanceType<typeof Timer>>("timerRef")
           <div class="relative p-1 mb-2 border-b border-gray-200/50 flex justify-between">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"/>
-              <span class="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Вопрос</span>
+              <span
+                  class="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Вопрос</span>
             </div>
           </div>
 
@@ -36,22 +37,25 @@ const timerRef = useTemplateRef<InstanceType<typeof Timer>>("timerRef")
 
         <!-- Image -->
         <div v-if="imageId" class="relative flex-shrink-0">
-          <div class="relative overflow-hidden rounded-2xl shadow-2xl group">
-            <!-- Image frame decoration -->
-            <div
-                class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur group-hover:blur-lg transition duration-500"/>
 
-            <!-- Image -->
-            <img :src="`/api/quiz/image/${imageId}`"
-                 alt="Картинка вопроса"
-                 class="relative max-w-128 max-h-96 rounded-xl transform group-hover:scale-[1.02] transition duration-500"
-                 loading="lazy"
-            />
+          <a :href="`/api/quiz/image/${imageId}`" target="_blank">
+            <div class="relative overflow-hidden rounded-2xl shadow-2xl group">
+              <!-- Image frame decoration -->
+              <div
+                  class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur group-hover:blur-lg transition duration-500"/>
 
-            <!-- Image overlay effect -->
-            <div
-                class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500 rounded-xl"/>
-          </div>
+              <!-- Image -->
+              <img :src="`/api/quiz/image/${imageId}`"
+                   alt="Картинка вопроса"
+                   class="relative max-w-[800px] max-h-[700px] hover:max-h-[900px]rounded-xl transform group-hover:scale-[1.02] transition duration-500"
+                   loading="lazy"
+              />
+
+              <!-- Image overlay effect -->
+              <div
+                  class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500 rounded-xl"/>
+            </div>
+          </a>
         </div>
       </div>
     </div>

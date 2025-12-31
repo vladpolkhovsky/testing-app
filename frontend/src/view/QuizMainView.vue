@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col shrink items-center p-3 w-full xl:w-6xl mx-auto">
+  <div class="flex flex-col shrink items-center p-3 w-full lg:w-5xl xl:w-[1800px] mx-auto">
     <LiquidGlass class="w-full xm:w-3xl p-0 flex flex-col gap-8">
-      <div class="w-full max-w-6xl mx-auto">
+      <div class="w-full max-w-[1800px] mx-auto">
         <!-- Header -->
         <LiquidGlass class="h-fit p-6" style="z-index: 10;">
           <div class="flex flex-col items-center lg:flex-row justify-between lg:items-center gap-4">
@@ -58,8 +58,8 @@
           <TransitionGroup name="list">
             <!-- Game Finished Screen -->
             <div v-if="gameState.gameFinished"
-                key="game-finished"
-                class="flex flex-col items-center justify-center h-full gap-5 p-3">
+                 key="game-finished"
+                 class="flex flex-col items-center justify-center h-full gap-5 p-3">
               <div
                   class="text-center text-2xl bg-gradient-to-l from-sky-700/80 to-green-300/50 p-4 border rounded-xl font-bold tektur-badge">
                 Игра завершена
@@ -69,16 +69,17 @@
               </div>
             </div>
 
-            <!-- Active Round -->
-            <div v-if="gameState.roundStarted" key="active-round" class="flex flex-col gap-5">
-              <QuestionComponent :text="gameState?.question?.text!" :image-id="gameState?.question?.imageId" ref="questionComponentRef"/>
-              <Timer :seconds="gameState.duration" v-if="gameState.roundStarted && gameState.duration" ref="timerComponentRef" key="timer" class="mx-auto"/>
+            <!-- Rating/Results -->
+            <QuizRatingView v-if="!gameState.roundStarted" key="rating" class="mt-3 mb-3" :items="gameState.rating"
+                            @round-update-ended="quizRatingShowNextRoundButton()" ref="quizRatingRef"/>
+
+            <div v-if="gameState.gameStarted" key="active-round" class="flex flex-col gap-5">
+              <QuestionComponent :text="gameState?.question?.text!" :image-id="gameState?.question?.imageId"
+                                 ref="questionComponentRef"/>
+              <Timer :seconds="gameState.duration" v-if="gameState.roundStarted && gameState.duration"
+                     ref="timerComponentRef" key="timer" class="mx-auto"/>
               <AnswerComponent :options="gameState?.answers!" ref="answerComponentRef"/>
             </div>
-
-            <!-- Rating/Results -->
-            <QuizRatingView v-else="!gameState.roundStarted" key="rating" :items="gameState.rating" @round-update-ended="quizRatingShowNextRoundButton()" ref="quizRatingRef"/>
-
           </TransitionGroup>
         </LiquidGlass>
       </div>
@@ -201,6 +202,7 @@ onMounted(() => {
   socketService.setOnQuizShowNewQuestionMessageCallback(message => {
     gameState.question = message.question;
     gameState.answers = message.answers;
+
     SoundEngine.nextTrack();
   });
 
@@ -245,7 +247,7 @@ onMounted(() => {
 
     setTimeout(() => {
       if (quizRatingRef.value) quizRatingRef.value.updateModel(message.ratingItems);
-    }, 1700)
+    }, 1200);
   });
 
   socketService.setOnQuizAnswerSavedMessageCallback(message => {

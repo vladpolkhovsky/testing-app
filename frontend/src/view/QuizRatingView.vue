@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, ref } from 'vue'
+import {inject, onMounted, ref} from 'vue'
 import { getRandomRating, type RatingItem } from "@/model/RatingItem.ts"
 import { SocketService } from "@/service/SocketService.ts";
 import {CirclePlay} from "lucide-vue-next"
@@ -16,7 +16,7 @@ interface RankedItem {
 
 const props = defineProps<{
   items?: RatingItem[]
-}>()
+}>();
 
 const rankedItems = ref<RankedItem[]>([]);
 const socketService = inject<SocketService>("SocketService");
@@ -236,6 +236,7 @@ onMounted(() => {
           </div>
         </div>
       </div>
+      <div ref="anchor"></div>
     </TransitionGroup>
   </div>
 </template>
