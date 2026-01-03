@@ -12,7 +12,8 @@ services:
       - "443:443"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    profiles: [ "dev" ]
+    profiles:
+      - "dev"
 
   quiz-postgres:
     build:
@@ -38,14 +39,6 @@ services:
     networks:
       - nginx-le-network
 
-  quiz-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    networks:
-      - nginx-le-network
-
   quiz-backend:
     build:
       context: ./backend
@@ -62,6 +55,16 @@ services:
       spring.servlet.multipart.max-file-size: 10MB
       spring.servlet.multipart.max-request-size: 10MB
     restart: unless-stopped
+    networks:
+      - nginx-le-network
+
+  quiz-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8082:80"
     networks:
       - nginx-le-network
 
