@@ -1,6 +1,6 @@
 services:
 
-  nginx-dev:
+  quiz-nginx-dev:
     image: nginx:alpine
     container_name: nginx-proxy-dev
     restart: unless-stopped
@@ -14,28 +14,7 @@ services:
       - "host.docker.internal:host-gateway"
     profiles: [ "dev" ]
 
-  nginx-prod:
-    image: umputun/nginx-le:latest
-    container_name: nginx-proxy-prod
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      TZ: Europe/Moscow
-      LETSENCRYPT: true
-      LE_EMAIL: ${LE_EMAIL}
-      LE_FQDN: ${LE_DOMAIN}
-    volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/service.conf
-      - ./ssl:/etc/nginx/ssl
-    ports:
-      - "80:80"
-      - "443:443"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    profiles: [ "prod" ]
-
-  postgres:
+  quiz-postgres:
     build:
       context: ./postgres
       dockerfile: Dockerfile
@@ -56,21 +35,25 @@ services:
     volumes:
       - ./postgres/postgrespg-init-db.sql:/docker-entrypoint-initdb.d/postgres-init.sql:rw
       - pgdata:/var/lib/postgresql/18/docker:rw
+    networks:
+      - nginx-le-network
 
-  frontend:
+  quiz-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     restart: unless-stopped
+    networks:
+      - nginx-le-network
 
-  backend:
+  quiz-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile-dev
     ports:
       - "8081:8080"
     environment:
-      spring.datasource.url: jdbc:postgresql://postgres:5432/quiz
+      spring.datasource.url: jdbc:postgresql://quiz-postgres:5432/quiz
       spring.datasource.password: postgres
       spring.datasource.username: postgres
       server.servlet.context-path: /api/quiz
@@ -79,6 +62,12 @@ services:
       spring.servlet.multipart.max-file-size: 10MB
       spring.servlet.multipart.max-request-size: 10MB
     restart: unless-stopped
+    networks:
+      - nginx-le-network
 
 volumes:
-  pgdata:
+  quiz-pgdata:
+
+networks:
+  nginx-le-network:
+    external: true
