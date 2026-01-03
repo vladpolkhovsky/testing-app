@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./postgres/postgrespg-init-db.sql:/docker-entrypoint-initdb.d/postgres-init.sql:rw
-      - pgdata:/var/lib/postgresql/18/docker:rw
+      - quiz-pgdata:/var/lib/postgresql/18/docker:rw
     networks:
       - nginx-le-network
 
