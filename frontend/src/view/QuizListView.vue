@@ -62,7 +62,7 @@ onMounted(() => {
             <h1 class="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
               Панель управления квизами
             </h1>
-            <p class="text-xl text-gray-600 mb-8">Создавайте, редактируйте и запускайте интерактивные викторины</p>
+            <p class="text-xl text-gray-600 mb-8 font-medium">Создавайте, редактируйте и запускайте интерактивные викторины</p>
             <a href="/api/quiz/editor/create"
                target="_blank"
                class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 hover:shadow-xl hover:scale-105 group">

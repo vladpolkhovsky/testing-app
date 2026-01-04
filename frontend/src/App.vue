@@ -7,7 +7,7 @@ provide("LocalStorageApi", new LocalStorageApi());
 </script>
 
 <template>
-  <ChristmasBackground />
+  <!-- <ChristmasBackground /> -->
   <div class="min-h-screen flex relative z-0">
     <router-view />
   </div>

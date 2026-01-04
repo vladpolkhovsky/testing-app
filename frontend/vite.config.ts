@@ -15,8 +15,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/quiz': {
-        target: 'http://localhost:8080',
-        ws: true
+        target: 'https://quiz.vpolkhovsky.net/',
+        ws: true,
+        changeOrigin: true
       }
     }
   },
