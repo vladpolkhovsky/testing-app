@@ -21,18 +21,7 @@ import type {
 } from "@/model/stomp-messages";
 
 export class SocketService {
-  setOnQuizInitializationMessageCallback(handleInitMessage: (message: QuizInitializationMessage) => void) {
-    throw new Error("Method not implemented.");
-  }
-  setOnQuizShowNewQuestionMessageCallback(handleShowNewQuestionMessage: (message: QuizShowNewQuestionMessage) => void) {
-    throw new Error("Method not implemented.");
-  }
-  setOnEndQuizQuestionCallback(handleQuizRoundStopMessage: (message: QuizRoundMessage) => void) {
-    throw new Error("Method not implemented.");
-  }
-  setOnStartQuizQuestionCallback(handleQuizRoundStartMessage: (message: QuizRoundMessage) => void) {
-    throw new Error("Method not implemented.");
-  }
+
   private roomId: string;
   private userId?: string;
   private client: Client;
