@@ -1,9 +1,13 @@
 package by.vppolkhovsky.tests_app.dto;
 
+import by.vppolkhovsky.tests_app.events.SaveAnswerEvent;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 
 @Data
@@ -15,19 +19,10 @@ public class QuizContext {
     private String id;
     private QuizDto quiz;
 
-    private ScheduledFuture<?> roundStartFuture;
-    private ScheduledFuture<?> roundTimeoutFuture;
-    private ScheduledFuture<?> discussionFuture;
-
-    @Builder.Default
-    private Map<UUID, Set<QuestionAnswer>> questionAnswers = new HashMap<>();
-    @Builder.Default
-    private Map<String, UserRatingDto> userRating = new HashMap<>();
-
-    private UUID currentQuestionId;
-
     private Integer currentRound;
     private Integer maxRounds;
+
+    private UUID currentQuestionId;
 
     @Builder.Default
     private Boolean gameStarted = false;
@@ -35,35 +30,59 @@ public class QuizContext {
     private Boolean roundStarted = false;
     @Builder.Default
     private Boolean gameFinished = false;
+    @Builder.Default
+    private Set<UserDto> participants = new HashSet<>();
+    @Builder.Default
+    private Map<UUID, Map<String, UUID>> questionToUserToAnswer = new HashMap<>();
+    @Builder.Default
+    private Map<UUID, Map<String, LocalDateTime>> questionToUserToAnswerTime = new HashMap<>();
+    @Builder.Default
+    private Map<UUID, Map<String, Integer>> questionToUserToRating = new HashMap<>();
+    @Builder.Default
+    @JsonIgnore
+    private Queue<SaveAnswerEvent> savedAnswersQueue = new ConcurrentLinkedQueue<>();
+    @Builder.Default
+    @JsonIgnore
+    private Set<String> savedAnswers = ConcurrentHashMap.newKeySet();
 
-    public Optional<QuestionDto> getCurrentQuestion() {
-        return quiz.getQuestions().stream()
-            .filter(q -> Objects.equals(currentQuestionId, q.getId()))
+    @Getter
+    @Setter
+    @JsonIgnore
+    private ScheduledFuture<?> stopRoundTask;
+
+    @JsonIgnore
+    public Optional<AnswerDto> getCurrentQuestionCorrectAnswer() {
+        return getCurrentQuestion().stream()
+            .map(QuestionDto::getAnswers)
+            .flatMap(List::stream)
+            .filter(AnswerDto::getIsCorrect)
             .findAny();
     }
 
-    public Optional<Integer> getQuestionIndex() {
-        return getCurrentQuestion().map(questionDto -> {
-            int index = quiz.getQuestions().indexOf(questionDto);
-            return index > -1 ? index : null;
-        });
+    @JsonIgnore
+    public Optional<QuestionDto> getCurrentQuestion() {
+        return getQuiz().getQuestions().stream().filter(q -> q.getId().equals(currentQuestionId))
+            .findAny();
     }
 
-    public void cancelAllFutures() {
-        if (roundStartFuture != null) roundStartFuture.cancel(false);
-        if (roundTimeoutFuture != null) roundTimeoutFuture.cancel(false);
-        if (discussionFuture != null) discussionFuture.cancel(false);
+    @JsonIgnore
+    public Optional<QuestionDto> getPreviousQuestion() {
+        int index = getQuestionOrder().indexOf(currentQuestionId);
+        if (index <= 0) {
+            return Optional.empty();
+        }
+        return getQuiz().getQuestions().stream().filter(q -> q.getId().equals(getQuestionOrder().get(index - 1)))
+            .findAny();
     }
 
-    @Data
-    @Builder
-    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-    public static class QuestionAnswer {
-        @EqualsAndHashCode.Include
-        private UUID questionId;
-        @EqualsAndHashCode.Include
-        private String userId;
-        private UUID answerId;
-        private LocalDateTime time;
+    public List<UUID> getQuestionOrder() {
+        return quiz.getQuestions().stream()
+            .map(QuestionDto::getId)
+            .toList();
+    }
+
+    public Optional<UserDto> getUserById(String id) {
+        return participants.stream().filter(user -> user.getUserId().equals(id))
+            .findAny();
     }
 }

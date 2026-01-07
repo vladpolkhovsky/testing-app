@@ -1,21 +1,20 @@
 <template>
-    <div class="flex gap-3"
+    <div class="flex gap-3 w-full"
         :class="[orientation === 'vertical' ? 'flex-row justify-between' : 'flex-col']">
         <!-- Текст вопроса -->
         <div :class="[orientation === 'vertical' ? 'min-w-1/3' : 'w-full']">
             <h2 class="text-3xl font-semibold mb-4 text-gray-800">
                 Вопрос:
             </h2>
-            <p class="text-gray-700 whitespace-pre-wrap text-2xl font">
+            <p class="text-gray-700 whitespace-pre-wrap text-4xl font-medium">
                 {{ question }}
             </p>
         </div>
 
         <!-- Изображение -->
-        <div class="relative flex items-center justify-center"
+        <div v-if="imageId" class="relative flex items-center justify-center"
             :class="[orientation === 'vertical' ? 'h-full' : 'w-full']">
-            <img ref="imageRef" :src="imageUrl" alt="Иллюстрация к вопросу" class="object-contain"
-                :class="[orientation === 'vertical' ? 'h-full w-auto max-w-full' : 'w-full h-auto max-h-full']"
+            <img ref="imageRef" :src="`/api/quiz/image/${imageId}`" alt="Иллюстрация к вопросу" class="rounded-md border"
                 @load="handleImageLoad" @error="handleImageError" />
             <div v-if="!imageLoaded" class="absolute inset-0 flex items-center justify-center">
                 <div class="text-gray-400">
@@ -36,7 +35,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 interface Props {
     question: string
-    imageUrl: string
+    imageId: string
 }
 
 const props = defineProps<Props>()

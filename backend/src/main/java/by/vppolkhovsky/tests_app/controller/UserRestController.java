@@ -30,7 +30,7 @@ public class UserRestController {
 
     @Transactional(readOnly = true)
     @GetMapping(value = "/iam", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserDto> iam(@JwtToken UUID userId) {
+    public ResponseEntity<UserDto> iam(@JwtToken(required = true) UUID userId) {
         return ResponseEntity.of(userRepository.findById(userId).map(userMapper::toDto));
     }
 

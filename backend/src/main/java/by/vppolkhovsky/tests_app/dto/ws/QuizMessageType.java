@@ -1,10 +1,14 @@
 package by.vppolkhovsky.tests_app.dto.ws;
 
 public enum QuizMessageType {
-    INIT_MESSAGE,
-    NEW_QUESTION,
+    START_GAME,
     START_ROUND,
+    SHOW_QUESTION,
+    SHOW_QUESTION_ANSWER,
+    NOTIFY_ANSWER_SAVED,
     STOP_ROUND,
-    NEW_RATING,
-    ANSWER_SAVED
+    SHOW_RATING,
+    SHOW_UPDATED_RATING,
+    STOP_GAME,
+    USER_CONNECTED
 }

@@ -1,65 +1,54 @@
-import type {Question} from "@/model/Question.ts";
-import type {AnswerOption} from "@/model/AnswerOption.ts";
-import type {RatingItem} from "@/model/RatingItem.ts";
+import type { User } from "./User";
 
-export interface QuizInitializationMessage extends QuizMessage {
-  type: "INIT_MESSAGE",
+export type OnStartGameCallback = (message: WsMessage) => void;
+export type OnStartRoundCallback = (message: WsMessage) => void;
+export type OnShowQuestionCallback = (message: WsShowQuestionMessage) => void;
+export type OnShowQuestionAnswerCallback = (message: WsMessage) => void;
+export type OnNotifySavedCallback = (message: WsAnswerSavedMessage) => void;
+export type OnStopGameCallback = (message: WsMessage) => void;
+export type OnStopRoundCallback = (message: WsMessage) => void;
+export type OnShowRatingCallback = (message: WsRatingMessage) => void;
+export type OnShowUpdatedRatingCallback = (message: WsRatingMessage) => void;
+export type OnUserConnectedCallback = (message: WsUserConnectedMessage) => void;
 
-  title: string;
+export interface WsUserConnectedMessage extends WsMessage {
+  type: "USER_CONNECTED";
+  user: User
+}
 
+export interface WsShowQuestionMessage extends WsMessage {
+  type: "SHOW_QUESTION";
+  questionId: string;
   currentRound: number;
-  maxRounds: number;
-
-  question: Question,
-  answers: AnswerOption[],
-  ratingItems: RatingItem[],
-
-  questionId: string,
-  nextQuestionId?: string,
-
-  gameStarted: boolean,
-  roundStarted: boolean,
-  gameFinished: boolean
+  roundTime: number;
 }
 
-export interface QuizShowNewQuestionMessage extends QuizMessage {
-  type: "NEW_QUESTION",
-
-  question: Question,
-  answers: AnswerOption[],
-
-  questionId: string,
-  nextQuestionId?: string
+export interface WsRatingMessage extends WsMessage {
+  type: "SHOW_RATING" | "SHOW_UPDATED_RATING";
+  rating: Record<string, number>;
 }
 
-export interface QuizRoundMessage extends QuizMessage {
-  type: "START_ROUND" | "STOP_ROUND",
-  questionId: string,
-
-  imageAlternativeId?: string,
-  textAlternative?: string,
-
-  nextRound: number,
-  gameFinished: boolean,
-
-  duration: number
+export interface WsAnswerSavedMessage extends WsMessage {
+  type: "NOTIFY_ANSWER_SAVED";
+  contextId: string;
+  userId: string;
+  questionId: string;
+  answerId: string;
+  text: string;
 }
 
-export interface QuizNewRatingMessage extends QuizMessage {
-  type: "NEW_RATING",
-  ratingItems: RatingItem[]
+export interface WsMessage {
+  type: WsMessageType;
 }
 
-export interface QuizAnswerSavedMessage extends QuizMessage {
-  type: "ANSWER_SAVED",
-  username: string
-}
-
-export interface QuizMessage {
-  type: QuizMessageType,
-  quizId: string
-}
-
-export type QuizMessageType = "INIT_MESSAGE" | "NEW_QUESTION" | "START_ROUND" | "STOP_ROUND" | "NEW_RATING" | "ANSWER_SAVED";
-
-
+export type WsMessageType =
+  | "START_GAME"
+  | "START_ROUND"
+  | "SHOW_QUESTION"
+  | "SHOW_QUESTION_ANSWER"
+  | "NOTIFY_ANSWER_SAVED"
+  | "STOP_ROUND"
+  | "SHOW_RATING"
+  | "SHOW_UPDATED_RATING"
+  | "STOP_GAME"
+  | "USER_CONNECTED";

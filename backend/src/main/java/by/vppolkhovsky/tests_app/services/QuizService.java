@@ -1,243 +1,207 @@
 package by.vppolkhovsky.tests_app.services;
 
-import by.vppolkhovsky.tests_app.dto.*;
+import by.vppolkhovsky.tests_app.dto.AnswerDto;
+import by.vppolkhovsky.tests_app.dto.QuestionDto;
+import by.vppolkhovsky.tests_app.dto.QuizContext;
+import by.vppolkhovsky.tests_app.dto.UserDto;
 import by.vppolkhovsky.tests_app.dto.ws.*;
-import by.vppolkhovsky.tests_app.mapper.QuizMapper;
+import by.vppolkhovsky.tests_app.events.SaveAnswerEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class QuizService {
 
-    private static int TIME_START_DELEY = 1;
-    private static int ROUND_TIME = 25;
-    private static int DISCUSSION_DELAY = 12;
-
-    private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+    private static final Integer ROUND_TIMER = 10;
 
     private final SimpMessagingTemplate messagingTemplate;
     private final QuizContextHolder quizContextHolder;
-    private final QuizMapper quizMapper;
 
-    public void notifySilent(String contextId) {
-        QuizContext context = quizContextHolder.getContext(contextId);
-        notifyWithInitialMessage(context);
-    }
+    private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
-    public void handleUserConnection(String contextId, UserDto dto) {
+    public void startGame(String contextId) {
         QuizContext context = quizContextHolder.getContext(contextId);
-        context.getUserRating().computeIfAbsent(dto.getUserId(), key -> UserRatingDto.builder().user(dto).build());
-        notifyWithInitialMessage(context);
-        log.info("User connected {} : {}", contextId, dto);
+        context.setGameStarted(true);
+
+        notify(contextId, new WsMessage(QuizMessageType.START_GAME));
+
+        startRound(contextId);
     }
 
     public void startRound(String contextId) {
         QuizContext context = quizContextHolder.getContext(contextId);
+        context.setRoundStarted(true);
 
-        if (context.getGameStarted() == false) context.setGameStarted(true);
-        if (context.getRoundStarted() == false) context.setRoundStarted(true);
-
-        QuestionDto nextQuestion = null;
-        if (context.getCurrentQuestionId() == null) {
+        context.getCurrentQuestion().ifPresentOrElse(question -> {
+            int index = context.getQuestionOrder().indexOf(question.getId());
+            context.setCurrentRound(index + 2);
+            context.setCurrentQuestionId(context.getQuestionOrder().get(index + 1));
+        }, () -> {
             context.setCurrentRound(1);
-            nextQuestion = context.getQuiz().getQuestions().getFirst();
-        } else {
-            QuestionDto currentQuestion = context.getQuiz().getQuestions().stream()
-                .filter(q -> Objects.equals(q.getId(), context.getCurrentQuestionId()))
-                .findAny().orElseThrow();
-
-            int currentQuestionIndex = context.getQuiz().getQuestions().indexOf(currentQuestion);
-
-            if (currentQuestionIndex + 1 < context.getQuiz().getQuestions().size()) {
-                nextQuestion = context.getQuiz().getQuestions().get(currentQuestionIndex + 1);
-                context.setCurrentRound(currentQuestionIndex + 2);
-            }
-        }
-
-        if (nextQuestion == null) {
-            context.setGameFinished(true);
-            context.setRoundStarted(false);
-            context.setCurrentRound(context.getMaxRounds());
-            notifySilent(contextId);
-            return;
-        }
-
-        context.setCurrentQuestionId(nextQuestion.getId());
-
-        notifyShowMessageMessage(context);
-
-        // Запускаем старт раунда через TIME_START_DELEY секунд
-        ScheduledFuture<?> startFuture = executor.schedule(() -> {
-            notify(contextId, WsStartStopRoundMessageDto.start(
-                context.getCurrentQuestionId(),
-                ROUND_TIME,
-                context.getCurrentRound()
-            ));
-
-            // Запускаем таймер остановки раунда через ROUND_TIME секунд
-            context.setRoundTimeoutFuture(executor.schedule(() -> sendStopMessage(contextId), ROUND_TIME, TimeUnit.SECONDS));
-
-        }, TIME_START_DELEY, TimeUnit.SECONDS);
-
-        context.setRoundStartFuture(startFuture);
-
-        log.info("Start round scheduled {}", contextId);
-    }
-
-    /**
-     * Метод для отправки сообщения STOP и запуска discussion таймера
-     */
-    private void sendStopMessage(String contextId) {
-        QuizContext context = quizContextHolder.getContext(contextId);
-
-        WsStartStopRoundMessageDto stopMessage = WsStartStopRoundMessageDto.stop(
-            context.getCurrentQuestionId(),
-            context.getCurrentRound(),
-            context.getCurrentRound() + 1 > context.getMaxRounds()
-        );
-
-        context.getCurrentQuestion().ifPresent(q -> {
-            stopMessage.setTextAlternative(StringUtils.trimToNull(q.getTextAlternative()));
-            stopMessage.setImageAlternativeId(StringUtils.trimToNull(q.getImageAlternativeId()));
+            context.setCurrentQuestionId(context.getQuestionOrder().getFirst());
         });
 
-        notify(contextId, stopMessage);
+        WsShowQuestionMessage showNewQuestion = WsShowQuestionMessage.builder()
+            .currentRound(context.getCurrentRound())
+            .questionId(context.getCurrentQuestionId())
+            .roundTime(ROUND_TIMER)
+            .build();
 
-        // Запускаем discussion таймер
-        context.setDiscussionFuture(executor.schedule(() -> stopRound(contextId), DISCUSSION_DELAY, TimeUnit.SECONDS));
-    }
+        notify(contextId, new WsMessage(QuizMessageType.START_ROUND));
+        notify(contextId, showNewQuestion);
 
-    /**
-     * Метод для принудительной остановки раунда (раньше времени)
-     */
-    public void triggerStopRound(String contextId) {
-        QuizContext context = quizContextHolder.getContext(contextId);
-
-        if (context.getRoundTimeoutFuture() != null && !context.getRoundTimeoutFuture().isDone()) {
-            context.getRoundTimeoutFuture().cancel(false);
-        }
-
-        sendStopMessage(contextId);
+        ScheduledFuture<?> stopRoundTask = executor.schedule(() -> stopRound(contextId), ROUND_TIMER, TimeUnit.SECONDS);
+        context.setStopRoundTask(stopRoundTask);
     }
 
     public void stopRound(String contextId) {
         QuizContext context = quizContextHolder.getContext(contextId);
-
         context.setRoundStarted(false);
 
-        UUID questionId = context.getCurrentQuestionId();
+        notify(contextId, new WsMessage(QuizMessageType.STOP_ROUND));
+        notify(contextId, new WsMessage(QuizMessageType.SHOW_QUESTION_ANSWER));
 
-        Optional<QuestionDto> question = context.getQuiz().getQuestions().stream()
-            .filter(q -> Objects.equals(q.getId(), questionId))
-            .findAny();
-
-        UUID correctAnswerId = question.stream()
-            .map(QuestionDto::getAnswers)
-            .flatMap(Collection::stream)
-            .filter(AnswerDto::getIsCorrect)
-            .findFirst()
-            .map(AnswerDto::getId)
-            .orElse(UUID.randomUUID());
-
-        List<QuizContext.QuestionAnswer> correctAnswers = context.getQuestionAnswers().getOrDefault(questionId, Set.of()).stream()
-            .filter(q -> Objects.equals(q.getAnswerId(), correctAnswerId))
-            .toList();
-
-        List<LocalDateTime> correctAnswerTimes = correctAnswers.stream()
-            .map(QuizContext.QuestionAnswer::getTime)
-            .sorted()
-            .toList();
-
-        correctAnswers.forEach(a -> {
-            Optional.ofNullable(context.getUserRating().get(a.getUserId())).ifPresent((rating) -> {
-                QuestionDto currentQuestion = question.orElseThrow();
-                double halfPrice = currentQuestion.getPrice() / 2.0;
-
-                // Разница в миллисекундах от первого правильного ответа
-                long timeDiffMs = Duration.between(correctAnswerTimes.getFirst(), a.getTime()).toMillis();
-
-                // Преобразуем миллисекунды в секунды с точностью до 3 знаков
-                double timeDiffSeconds = timeDiffMs / 1000.0;
-
-                // Формула: 500 + 500 * e^(-время/10)
-                double exponent = Math.exp(-timeDiffSeconds / 10.0);
-                double points = halfPrice + halfPrice * exponent;
-
-                // Гарантируем минимум 500 очков
-                points = Math.max(halfPrice, points);
-
-                rating.setRating(rating.getRating() + (int) Math.round(points));
-            });
+        context.getPreviousQuestion().map(QuestionDto::getId).ifPresentOrElse(id -> {
+            executor.schedule(() -> notify(contextId, new WsRatingMessage(QuizMessageType.SHOW_RATING, id, context.getQuestionToUserToRating().get(id))), 5, TimeUnit.SECONDS);
+        }, () -> {
+            Set<UserDto> participants = context.getParticipants();
+            Map<String, Integer> firstResult = participants.stream().collect(Collectors.toMap(UserDto::getUserId, dto -> 0));
+            executor.schedule(() -> notify(contextId, new WsRatingMessage(QuizMessageType.SHOW_RATING, context.getCurrentQuestionId(), firstResult)), 5, TimeUnit.SECONDS);
         });
 
-        notifyNewRatingMessage(context);
+        executor.schedule(() -> computeRoundResults(contextId, context.getCurrentQuestionId()), 10, TimeUnit.SECONDS);
 
-        log.info("Round stopped {}", contextId);
-    }
-
-    public void saveAnswer(String contextId, String userId, UUID answerId) {
-        QuizContext context = quizContextHolder.getContext(contextId);
-
-        if (context.getRoundStarted()) {
-            UUID questionId = context.getCurrentQuestionId();
-
-            QuizContext.QuestionAnswer answer = QuizContext.QuestionAnswer.builder()
-                .answerId(answerId)
-                .questionId(questionId)
-                .userId(userId)
-                .time(LocalDateTime.now())
-                .build();
-
-            context.getQuestionAnswers().computeIfAbsent(questionId, (k) -> new HashSet<>());
-
-            boolean alreadyAdded = context.getQuestionAnswers().get(questionId).contains(answer);
-
-            if (!alreadyAdded) {
-                context.getQuestionAnswers().get(questionId).add(answer);
-
-                context.getUserRating().values().stream()
-                    .map(UserRatingDto::getUser)
-                    .filter(u -> Objects.equals(u.getUserId(), userId))
-                    .findAny().ifPresent(user -> {
-                        notify(contextId, WsAnswerSavedDto.of(user.getUsername()));
-                    });
-
-                if (context.getQuestionAnswers().get(questionId).size() == context.getUserRating().size()) {
-                    triggerStopRound(contextId);
-                }
-            }
-
-            log.info("Save answer {}", answer);
+        if (context.getQuestionOrder().getLast() == context.getCurrentQuestionId()) {
+            stopGame(contextId);
         }
     }
 
-    private void notifyWithInitialMessage(QuizContext context) {
-        WsQuizInitMessageDto message = quizMapper.toInitMessage(context);
-        notify(context.getId(), message);
+    private void computeRoundResults(String contextId, UUID questionId) {
+        QuizContext context = quizContextHolder.getContext(contextId);
+
+        List<SaveAnswerEvent> savedAnswers = context.getSavedAnswersQueue().stream()
+            .filter(saved -> saved.getQuestionId().equals(questionId))
+            .sorted(Comparator.comparing(SaveAnswerEvent::getSavedAt).reversed())
+            .toList();
+
+        Set<String> userAnswerSaved = new HashSet<>();
+        List<SaveAnswerEvent> lastAnswers = savedAnswers.stream().filter(answer -> userAnswerSaved.add(answer.getUserId()))
+            .toList();
+
+        lastAnswers.forEach(saved -> {
+            context.getQuestionToUserToAnswer().computeIfAbsent(questionId, uuid -> new HashMap<>())
+                .put(saved.getUserId(), saved.getAnswerId());
+            context.getQuestionToUserToAnswerTime().computeIfAbsent(questionId, uuid -> new HashMap<>())
+                .put(saved.getUserId(), saved.getSavedAt());
+        });
+
+        record CorrectAnswer(String userId, LocalDateTime time) {
+        }
+
+        UUID correctAnswerId = context.getCurrentQuestionCorrectAnswer().map(AnswerDto::getId).orElse(null);
+        List<CorrectAnswer> correctAnswers = context.getQuestionToUserToAnswer().getOrDefault(questionId, Map.of()).entrySet().stream()
+            .filter(entry -> entry.getValue().equals(correctAnswerId))
+            .map(entry -> new CorrectAnswer(entry.getKey(), context.getQuestionToUserToAnswerTime().get(questionId).get(entry.getKey())))
+            .sorted(Comparator.comparing(CorrectAnswer::time).reversed())
+            .toList();
+
+        context.getParticipants().forEach(u -> {
+            context.getQuestionToUserToRating().computeIfAbsent(questionId, uuid -> new HashMap<>()).put(u.getUserId(), 0);
+        });
+
+        Optional<QuestionDto> previousQuestion = context.getPreviousQuestion();
+        if (previousQuestion.isPresent()) {
+            UUID previousQuestionId = previousQuestion.get().getId();
+            context.getQuestionToUserToRating().get(previousQuestionId).forEach((userId, value) -> {
+                context.getQuestionToUserToRating().computeIfAbsent(questionId, uuid -> new HashMap<>()).put(userId, value);
+            });
+        }
+
+        correctAnswers.forEach(correctAnswer -> {
+            double halfPrice = context.getCurrentQuestion().get().getPrice() / 2.0;
+            long timeDiffMs = Math.abs(Duration.between(correctAnswers.getFirst().time(), correctAnswer.time()).toMillis());
+            double timeDiffSeconds = timeDiffMs / 1000.0;
+            double exponent = Math.exp(-timeDiffSeconds / 10.0);
+            double points = Math.max(halfPrice, halfPrice + halfPrice * exponent);
+
+            if (previousQuestion.isPresent()) {
+                UUID previousQuestionId = previousQuestion.get().getId();
+                Integer previousResults = context.getQuestionToUserToRating().get(previousQuestionId).get(correctAnswer.userId());
+                points = points + Optional.ofNullable(previousResults).orElse(0);
+            }
+
+            context.getQuestionToUserToRating().computeIfAbsent(questionId, uuid -> new HashMap<>()).put(correctAnswer.userId(), (int) Math.round(points));
+        });
+
+        context.getSavedAnswersQueue().clear();
+        context.getSavedAnswers().clear();
+
+        notify(contextId, new WsRatingMessage(QuizMessageType.SHOW_UPDATED_RATING, questionId, context.getQuestionToUserToRating().get(questionId)));
     }
 
-    private void notifyNewRatingMessage(QuizContext context) {
-        WsQuizNewRatingMessageDto message = quizMapper.toNewRating(context);
-        notify(context.getId(), message);
+    public void stopGame(String contextId) {
+        QuizContext context = quizContextHolder.getContext(contextId);
+        context.setGameFinished(true);
+
+        notify(contextId, new WsMessage(QuizMessageType.STOP_GAME));
     }
 
-    private void notifyShowMessageMessage(QuizContext context) {
-        WsQuizShowNewQuestionMessageDto message = quizMapper.toNewQuestionMessage(context);
-        notify(context.getId(), message);
+    public void connectParticipant(String contextId, UserDto dto) {
+        if (quizContextHolder.getContext(contextId).getParticipants().add(dto)) {
+            WsUserConnectedMessage wsUserConnectedMessage = new WsUserConnectedMessage(dto);
+            notify(contextId, wsUserConnectedMessage);
+        }
+    }
+
+    @EventListener
+    public void listenAnswerSaved(SaveAnswerEvent event) {
+        QuizContext context = quizContextHolder.getContext(event.getContextId());
+        String username = context.getUserById(event.getUserId()).map(UserDto::getUsername).orElse("<Неопозннай банан>");
+
+        if (!context.getRoundStarted()) {
+            return;
+        }
+
+        context.getSavedAnswersQueue().add(event);
+        context.getSavedAnswers().add(event.getUserId());
+
+        WsAnswerSavedMessage message = WsAnswerSavedMessage.builder()
+            .text("%s отправил ответ.".formatted(username))
+            .answerId(event.getAnswerId())
+            .userId(event.getUserId())
+            .questionId(event.getQuestionId())
+            .answerId(event.getAnswerId())
+            .contextId(event.getContextId())
+            .build();
+
+        notify(event.getContextId(), message);
+        notify(event.getContextId(), event.getUserId(), message);
+
+        if (context.getSavedAnswers().size() == context.getParticipants().size()) {
+            if (context.getStopRoundTask().cancel(false))
+                executor.schedule(() -> stopRound(context.getId()), 2, TimeUnit.SECONDS);
+        }
     }
 
     private void notify(String contextId, Object object) {
-        log.info("Send update /queue/quiz/{}/updates : {}", contextId, object);
         messagingTemplate.convertAndSend("/queue/quiz/%s/updates".formatted(contextId), object);
+    }
+
+    private void notify(String contextId, String userId, Object object) {
+        messagingTemplate.convertAndSend("/queue/quiz/%s/%s/updates".formatted(contextId, userId), object);
     }
 }

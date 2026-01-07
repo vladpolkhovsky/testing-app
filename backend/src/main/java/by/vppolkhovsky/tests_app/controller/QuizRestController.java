@@ -1,6 +1,7 @@
 package by.vppolkhovsky.tests_app.controller;
 
 import by.vppolkhovsky.tests_app.controller.argresolver.JwtToken;
+import by.vppolkhovsky.tests_app.dto.QuizContext;
 import by.vppolkhovsky.tests_app.dto.QuizDto;
 import by.vppolkhovsky.tests_app.dto.QuizRegistryDto;
 import by.vppolkhovsky.tests_app.services.QuizContextHolder;
@@ -23,6 +24,7 @@ public class QuizRestController {
 
     private final QuizJpaService quizJpaService;
     private final QuizContextHolder quizContextHolder;
+
     @Value("${server.servlet.context-path}")
     private String contextPath;
 
@@ -32,16 +34,7 @@ public class QuizRestController {
     }
 
     @GetMapping("/create")
-    public ResponseEntity<Void> create(@JwtToken UUID userId) {
-        if (userId == null) {
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.setLocation(URI.create("/login-user"));
-
-            return ResponseEntity.status(HttpStatus.SEE_OTHER)
-                .headers(httpHeaders)
-                .build();
-        }
-
+    public ResponseEntity<Void> create(@JwtToken(required = true) UUID userId) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(URI.create("/editor/" + UUID.randomUUID()));
 
@@ -51,10 +44,10 @@ public class QuizRestController {
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<QuizDto> get(@PathVariable UUID id, @JwtToken UUID userId) {
-        if (userId == null || !quizJpaService.isUserHasAccessToQuiz(id, userId)) {
+    public ResponseEntity<QuizDto> get(@PathVariable UUID id, @JwtToken(required = true) UUID userId) {
+        if (!quizJpaService.isUserHasAccessToQuiz(id, userId)) {
             HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.setLocation(URI.create("/login-user"));
+            httpHeaders.setLocation(URI.create("/"));
 
             return ResponseEntity.status(HttpStatus.SEE_OTHER)
                 .headers(httpHeaders)
@@ -64,17 +57,14 @@ public class QuizRestController {
         return ResponseEntity.of(quizJpaService.get(id));
     }
 
+    @GetMapping(value = "/context/{contextId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<QuizContext> get(@PathVariable String contextId) {
+        QuizContext context = quizContextHolder.getContext(contextId);
+        return ResponseEntity.ok(context);
+    }
+
     @PostMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<QuizDto> save(@PathVariable UUID id, @RequestBody QuizDto quiz, @JwtToken UUID userId) {
-        if (userId == null || !quizJpaService.isUserHasAccessToQuiz(id, userId)) {
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.setLocation(URI.create("/login-user"));
-
-            return ResponseEntity.status(HttpStatus.SEE_OTHER)
-                .headers(httpHeaders)
-                .build();
-        }
-
+    public ResponseEntity<QuizDto> save(@PathVariable UUID id, @RequestBody QuizDto quiz, @JwtToken(required = true) UUID userId) {
         return ResponseEntity.ok(quizJpaService.save(id, quiz, userId));
     }
 

@@ -4,19 +4,16 @@ import {inject, ref} from "vue";
 import type {SocketService} from "@/service/SocketService.ts";
 import {CircleCheckBig, CircleX, CheckCheck, Send} from "lucide-vue-next"
 import LiquidGlass from "@/component/LiquidGlass.vue";
+import type { QuizAnswerDto } from "@/model/quiz/QuizAnswerDto";
+import type { QuizQuestionDto } from "@/model/quiz/QuizQuestionDto";
 
 const props = defineProps<{
-  options?: AnswerOption[]
+  question?: QuizQuestionDto;
+  options?: QuizAnswerDto[];
 }>();
 
-const answerOptions = ref<AnswerOption[]>(props.options ?? []);
+const answerOptions = ref<QuizAnswerDto[]>(props.options ?? []);
 const socketService = inject<SocketService>("SocketService");
-
-const updateOptions = (options: AnswerOption[]) => {
-  isSent.value = false;
-  selectedId.value = undefined;
-  answerOptions.value = options;
-}
 
 const showOnlyCorrect = () => {
   isShowOnlyCorrect.value = true;
@@ -25,10 +22,10 @@ const showOnlyCorrect = () => {
 const reset = () => {
   isShowOnlyCorrect.value = false;
   selectedId.value = undefined;
+  isSent.value = false;
 }
 
 defineExpose({
-  updateOptions,
   showOnlyCorrect,
   reset
 });
@@ -40,7 +37,7 @@ const isShowOnlyCorrect = ref<boolean>(false);
 
 const sent = (id: string) => {
   isSent.value = true;
-  socketService?.sendAnswer(id);
+  socketService?.sendAnswer(props.question!.id, id);
 }
 
 const select = (id: string) => {
@@ -75,10 +72,10 @@ const select = (id: string) => {
           selectedId === option.id && isSent && !isShowOnlyCorrect
             ? 'border-amber-500 bg-amber-50/50 ring-2 md:ring-4 ring-amber-500/20'
             : '',
-          selectedId === option.id && isSent && isShowOnlyCorrect && option.correct
+          selectedId === option.id && isSent && isShowOnlyCorrect && option.isCorrect
             ? 'border-green-500 bg-green-50/50 ring-2 md:ring-4 ring-green-500/20'
             : '',
-          selectedId === option.id && isSent && isShowOnlyCorrect && !option.correct
+          selectedId === option.id && isSent && isShowOnlyCorrect && !option.isCorrect
             ? 'border-rose-500 bg-rose-50/50 ring-2 md:ring-4 ring-rose-500/20'
             : ''
         ]"
@@ -88,8 +85,8 @@ const select = (id: string) => {
             :class="[
             'absolute inset-0 opacity-100 transition-opacity duration-300 bg-gradient-to-r from-gray-50 to-gray-100',
             selectedId === option.id && isSent && !isShowOnlyCorrect ? 'bg-gradient-to-r from-amber-500/5 to-amber-400/10 opacity-100' : '',
-            selectedId === option.id && isSent && isShowOnlyCorrect && option.correct ? 'bg-gradient-to-r from-green-500/5 to-green-400/10 opacity-100' : '',
-            selectedId === option.id && isSent && isShowOnlyCorrect && !option.correct ? 'bg-gradient-to-r from-rose-500/5 to-rose-400/10 opacity-100' : '',
+            selectedId === option.id && isSent && isShowOnlyCorrect && option.isCorrect ? 'bg-gradient-to-r from-green-500/5 to-green-400/10 opacity-100' : '',
+            selectedId === option.id && isSent && isShowOnlyCorrect && !option.isCorrect ? 'bg-gradient-to-r from-rose-500/5 to-rose-400/10 opacity-100' : '',
             selectedId !== option.id ? 'group-hover:bg-gradient-to-r group-hover:from-blue-500/5 group-hover:to-transparent group-hover:opacity-100' : ''
           ]"
         />
@@ -100,7 +97,7 @@ const select = (id: string) => {
             <div class="relative w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 flex items-center justify-center">
               <!-- Not selected -->
               <div
-                  v-if="selectedId !== option.id && (!isShowOnlyCorrect || !option.correct)"
+                  v-if="selectedId !== option.id && (!isShowOnlyCorrect || !option.isCorrect)"
                   :class="[
                   'w-6 h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-bold text-base sm:text-lg md:text-xl',
                   'transition-all duration-300',
@@ -129,21 +126,21 @@ const select = (id: string) => {
 
               <!-- Correct answer -->
               <CircleCheckBig
-                  v-if="selectedId === option.id && isSent && isShowOnlyCorrect && option.correct"
+                  v-if="selectedId === option.id && isSent && isShowOnlyCorrect && option.isCorrect"
                   :size="28"
                   class="sm:w-8 sm:h-8 md:w-9 md:h-9 text-green-500 animate-bounce"
               />
 
               <!-- Wrong answer -->
               <CircleX
-                  v-if="selectedId === option.id && isSent && isShowOnlyCorrect && !option.correct"
+                  v-if="selectedId === option.id && isSent && isShowOnlyCorrect && !option.isCorrect"
                   :size="28"
                   class="sm:w-8 sm:h-8 md:w-9 md:h-9 text-rose-500 animate-shake"
               />
 
               <!-- Correct but not selected -->
               <CheckCheck
-                  v-if="selectedId !== option.id && isShowOnlyCorrect && option.correct"
+                  v-if="selectedId !== option.id && isShowOnlyCorrect && option.isCorrect"
                   :size="24"
                   class="sm:w-7 sm:h-7 md:w-8 md:h-8 text-green-400"
               />
@@ -157,8 +154,8 @@ const select = (id: string) => {
                 'font-medium break-words text-center md:text-left',
                 selectedId === option.id && !isSent ? 'text-blue-700' : '',
                 selectedId === option.id && isSent && !isShowOnlyCorrect ? 'text-amber-700' : '',
-                selectedId === option.id && isSent && isShowOnlyCorrect && option.correct ? 'text-green-700' : '',
-                selectedId === option.id && isSent && isShowOnlyCorrect && !option.correct ? 'text-rose-700' : '',
+                selectedId === option.id && isSent && isShowOnlyCorrect && option.isCorrect ? 'text-green-700' : '',
+                selectedId === option.id && isSent && isShowOnlyCorrect && !option.isCorrect ? 'text-rose-700' : '',
                 selectedId !== option.id ? 'text-gray-900' : ''
               ]"
             >

@@ -39,6 +39,7 @@ onMounted(() => {
   const input = document.getElementById('username');
   input?.focus();
 });
+
 </script>
 
 <template>

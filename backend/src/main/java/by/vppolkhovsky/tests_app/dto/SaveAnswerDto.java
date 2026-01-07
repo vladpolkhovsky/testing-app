@@ -13,4 +13,5 @@ import java.util.UUID;
 @AllArgsConstructor
 public class SaveAnswerDto {
     private UUID answerId;
+    private UUID questionId;
 }

@@ -1,12 +1,11 @@
 <template>
-  <div class="flex flex-col shrink items-center p-3 w-full xl:w-6xl mx-auto">
+  <div class=" flex flex-col shrink items-center p-3 w-full xl:w-6xl mx-auto">
     <LiquidGlass class="w-full m-5 xm:w-3xl p-8 flex flex-col gap-8" v-if="!quiz.authProblems">
       <!-- Заголовок квиза -->
       <LiquidGlass class="p-6">
         <div
             v-if="quiz.isDirty"
-            class="w-full mb-6 p-4 rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-lg"
-        >
+            class="w-full mb-6 p-4 rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-lg">
           <div class="flex items-center justify-center gap-3">
             <svg class="w-6 h-6 text-amber-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd"
@@ -421,7 +420,6 @@
         </div>
       </LiquidGlass>
     </LiquidGlass>
-    <Toaster/>
   </div>
 </template>
 
@@ -436,7 +434,7 @@ import * as z from "zod"
 import {useRoute} from "vue-router";
 import LiquidGlass from "@/component/LiquidGlass.vue";
 import ValidationErrorComponent from '@/component/ValidationErrorComponent.vue'
-import {Toaster, toast} from "vue-sonner";
+import {toast} from "vue-sonner";
 
 const route = useRoute();
 

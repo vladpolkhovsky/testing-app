@@ -63,7 +63,7 @@ onUnmounted(() => {
 const handleMinusSecond = (): void => {
   //console.log("timer", secondLeft.value);
   if (secondLeft.value !== undefined && secondLeft.value > 0) {
-    secondLeft.value = secondLeft.value - 1;
+    secondLeft.value = secondLeft.value - 1; 
   }
 }
 
