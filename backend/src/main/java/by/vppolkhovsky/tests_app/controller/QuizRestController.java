@@ -6,6 +6,7 @@ import by.vppolkhovsky.tests_app.dto.QuizDto;
 import by.vppolkhovsky.tests_app.dto.QuizRegistryDto;
 import by.vppolkhovsky.tests_app.services.QuizContextHolder;
 import by.vppolkhovsky.tests_app.services.QuizJpaService;
+import by.vppolkhovsky.tests_app.services.QuizService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,13 +25,15 @@ public class QuizRestController {
 
     private final QuizJpaService quizJpaService;
     private final QuizContextHolder quizContextHolder;
+    private final QuizService quizService;
 
     @Value("${server.servlet.context-path}")
     private String contextPath;
 
-    public QuizRestController(QuizJpaService quizJpaService, QuizContextHolder quizContextHolder) {
+    public QuizRestController(QuizJpaService quizJpaService, QuizContextHolder quizContextHolder, QuizService quizService) {
         this.quizJpaService = quizJpaService;
         this.quizContextHolder = quizContextHolder;
+        this.quizService = quizService;
     }
 
     @GetMapping("/create")
@@ -60,6 +63,14 @@ public class QuizRestController {
     @GetMapping(value = "/context/{contextId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<QuizContext> get(@PathVariable String contextId) {
         QuizContext context = quizContextHolder.getContext(contextId);
+        return ResponseEntity.ok(context);
+    }
+
+    @PostMapping(value = "/context/delete/{contextId}/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<QuizContext> delete(@PathVariable String contextId, @PathVariable String userId, @JwtToken(required = true) UUID person) {
+        QuizContext context = quizContextHolder.getContext(contextId);
+        context.getParticipants().removeIf(u -> u.getUserId().equals(userId));
+        quizService.disconnect(contextId, userId);
         return ResponseEntity.ok(context);
     }
 

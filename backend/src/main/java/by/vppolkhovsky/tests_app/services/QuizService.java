@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class QuizService {
 
-    private static final Integer ROUND_TIMER = 10;
+    private static final Integer ROUND_TIMER = 30;
 
     private final SimpMessagingTemplate messagingTemplate;
     private final QuizContextHolder quizContextHolder;
@@ -167,6 +167,10 @@ public class QuizService {
         }
     }
 
+    public void disconnect(String contextId, String userId) {
+        notify(contextId, userId, new WsMessage(QuizMessageType.DISCONNECT));
+    }
+
     @EventListener
     public void listenAnswerSaved(SaveAnswerEvent event) {
         QuizContext context = quizContextHolder.getContext(event.getContextId());
@@ -204,4 +208,5 @@ public class QuizService {
     private void notify(String contextId, String userId, Object object) {
         messagingTemplate.convertAndSend("/queue/quiz/%s/%s/updates".formatted(contextId, userId), object);
     }
+
 }

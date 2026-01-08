@@ -85,6 +85,16 @@ socketService.setOnNotifyMySavedCallback((message) => {
       }
     });
 });
+
+socketService.setOnDisconnectCallback((message) => {
+  localStorageApi?.clearUserInformation();
+  router.push({
+    name: "QuizLoginView",
+    query: {
+      hardRedirectTo: window.location.toString(),
+    },
+  });
+})
 </script>
 
 <template>

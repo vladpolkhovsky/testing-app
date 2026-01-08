@@ -10,5 +10,6 @@ public enum QuizMessageType {
     SHOW_RATING,
     SHOW_UPDATED_RATING,
     STOP_GAME,
-    USER_CONNECTED
+    USER_CONNECTED,
+    DISCONNECT
 }

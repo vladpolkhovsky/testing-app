@@ -18,6 +18,10 @@ export class LocalStorageApi {
     return this.getVar<User>("user");
   }
 
+  public clearUserInformation() {
+    return localStorage.removeItem("user");
+  }
+
   public setUserInformation(user: User) {
     localStorage.setItem("user", JSON.stringify(user));
   }

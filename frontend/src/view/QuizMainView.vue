@@ -1,77 +1,92 @@
 <template>
   <LiquidGlass class="w-full h-100vh">
     <TransitionGroup name="list">
-      <LiquidGlass key="header" v-if="state.context">
-        <div class="flex justify-between items-center gap-3 ps-3 pe-3 w-full">
-          <div class="inline-flex gap-3 items-center">
-            <div
-              class="group transition-all duration-150 hover:scale-105 hover:text-red-700"
-            >
-              <a href="/"><LucideHome :size="32" /></a>
-            </div>
-            <div class="tektur-badge text-xl me-3">
-              {{ state.context.quiz.title }}
-            </div>
-            <div
-              v-if="state.context.gameFinished"
-              class="border p-2 tektur-badge text-md rounded-2xl border-blue-700 bg-radial from-blue-400 to-blue-400/50 hover:bg-blue-500 transition-all duration-150 hover:scale-105"
-            >
-              Игра заверешена
-            </div>
-            <div
-              v-else-if="state.context.gameStarted"
-              class="border p-2 tektur-badge text-md rounded-2xl border-green-700 bg-radial from-green-400 to-green-300/50 hover:bg-green-500 transition-all duration-150 hover:scale-105"
-            >
-              Раунд {{ state.context.currentRound }} /
-              {{ state.context.maxRounds }}
-            </div>
-            <div
-              v-else
-              class="border p-2 tektur-badge text-md rounded-2xl border-red-700 bg-radial from-red-400 to-red-400/50 hover:bg-red-500 transition-all duration-150 hover:scale-105"
-            >
-              Ожидание начала игры
-            </div>
-          </div>
-          <div>
-            <ul
-              class="flex flex-wrap text-sm font-medium text-center text-body"
-            >
-              <li class="me-5">
-                <button
-                  v-if="
-                    selectedTab == 'game' &&
-                    !state.context.roundStarted &&
-                    !state.context.gameFinished &&
-                    canDisplayNextRoundStart
-                  "
-                  @click="startRound()"
-                  class="w-full tektur-badge text-2xl border rounded-2xl p-3 bg-linear-to-r from-blue-400/30 to-indigo-500/50 hover:bg-indigo-500 hover:scale-105 transition-all duration-200"
-                >
-                  {{
-                    state.context.gameStarted
-                      ? "Следующий раунд"
-                      : "Начать игру"
-                  }}
-                </button>
-              </li>
-              <li v-for="tab in tabs" class="me-2">
-                <button
-                  class="inline-block p-3 rounded-t-base tektur-badge text-xl transition-all duration-150 hover:scale-110"
-                  :class="{
-                    'border-b-4 bg-amber-200 rounded-tl-xl rounded-tr-xl':
-                      selectedTab == tab.type,
-                  }"
-                  @click="selectedTab = tab.type"
-                >
-                  {{ tab.title }}
-                </button>
-              </li>
-            </ul>
-          </div>
+      <LiquidGlass v-if="canDisplayTimer" class="w-full">
+        <div class="min-h-15 flex justify-between">
+          <Timer :seconds="displayTimerSeconds" class="mx-auto" />
         </div>
       </LiquidGlass>
-      <div key="loading" class="flex justify-center" v-else>
-        <Loader :size="72" class="spinner" />
+      <div key="header" v-else>
+        <LiquidGlass key="header" v-if="state.context">
+          <div
+            class="flex justify-between items-center gap-3 ps-3 pe-3 w-full min-h-15"
+          >
+            <div class="inline-flex gap-3 items-center">
+              <div
+                class="group transition-all duration-150 hover:scale-105 hover:text-red-700"
+              >
+                <a href="/"><LucideHome :size="32" /></a>
+              </div>
+              <div class="tektur-badge text-xl me-3">
+                {{ state.context.quiz.title }}
+              </div>
+              <div
+                v-if="state.context.gameFinished"
+                class="border p-2 tektur-badge text-md rounded-2xl border-blue-700 bg-radial from-blue-400 to-blue-400/50 hover:bg-blue-500 transition-all duration-150 hover:scale-105"
+              >
+                Игра заверешена
+              </div>
+              <div
+                v-else-if="state.context.gameStarted"
+                class="border p-2 tektur-badge text-md rounded-2xl border-green-700 bg-radial from-green-400 to-green-300/50 hover:bg-green-500 transition-all duration-150 hover:scale-105"
+              >
+                Раунд {{ state.context.currentRound }} /
+                {{ state.context.maxRounds }}
+              </div>
+              <div
+                v-else
+                class="border p-2 tektur-badge text-md rounded-2xl border-red-700 bg-radial from-red-400 to-red-400/50 hover:bg-red-500 transition-all duration-150 hover:scale-105"
+              >
+                Ожидание начала игры
+              </div>
+            </div>
+            <Timer
+              :seconds="displayTimerSeconds"
+              v-if="
+                state.context && state.context.roundStarted && canDisplayTimer
+              "
+            />
+            <div>
+              <ul
+                class="flex flex-wrap text-sm font-medium text-center text-body"
+              >
+                <li class="me-5">
+                  <button
+                    v-if="
+                      selectedTab == 'game' &&
+                      !state.context.roundStarted &&
+                      !state.context.gameFinished &&
+                      canDisplayNextRoundStart
+                    "
+                    @click="startRound()"
+                    class="w-full tektur-badge text-2xl border rounded-2xl p-3 bg-linear-to-r from-blue-400/30 to-indigo-500/50 hover:bg-indigo-500 hover:scale-105 transition-all duration-200"
+                  >
+                    {{
+                      state.context.gameStarted
+                        ? "Следующий раунд"
+                        : "Начать игру"
+                    }}
+                  </button>
+                </li>
+                <li v-for="tab in tabs" class="me-2">
+                  <button
+                    class="inline-block p-3 rounded-t-base tektur-badge text-xl transition-all duration-150 hover:scale-110"
+                    :class="{
+                      'border-b-4 bg-amber-200 rounded-tl-xl rounded-tr-xl':
+                        selectedTab == tab.type,
+                    }"
+                    @click="selectedTab = tab.type"
+                  >
+                    {{ tab.title }}
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </LiquidGlass>
+        <div key="loading" class="flex justify-center" v-else>
+          <Loader :size="72" class="spinner" />
+        </div>
       </div>
       <TransitionGroup key="main" name="list" tag="div" v-if="state.context">
         <QuizNewRating
@@ -89,6 +104,7 @@
         />
         <QuizParticipantTabView
           v-if="selectedTab == 'pariticipant' && state.context"
+          @remove-participan="handleRemoveParticipant"
           :context="state.context"
         />
       </TransitionGroup>
@@ -109,6 +125,8 @@ import { SocketService } from "@/service/SocketService";
 import { toast } from "vue-sonner";
 import QuizParticipantTabView from "./game-screen/QuizParticipantTabView.vue";
 import QuizNewRating from "./game-screen/QuizNewRating.vue";
+import Timer from "@/component/Timer.vue";
+import type { User } from "@/model/User";
 
 type TabState = "game" | "pariticipant";
 
@@ -128,13 +146,19 @@ const selectedTab = ref<TabState>("game");
 const route = useRoute();
 const contextId = route.params.gameId as string;
 
-const state = reactive<{ loading: boolean; context?: QuizContextDto, showRating: Record<string, number> }>({
+const state = reactive<{
+  loading: boolean;
+  context?: QuizContextDto;
+  showRating: Record<string, number>;
+}>({
   loading: true,
-  showRating: {}
+  showRating: {},
 });
 
 const canDisplayNextRoundStart = ref(true);
 const canDisplayRating = ref(true);
+const canDisplayTimer = ref(false);
+const displayTimerSeconds = ref(0);
 
 const socketService: SocketService = new SocketService(contextId);
 
@@ -151,10 +175,13 @@ socketService.setOnShowQuestionCallback((message) => {
   state.context!.currentRound = message.currentRound;
   canDisplayNextRoundStart.value = false;
   canDisplayRating.value = false;
+  canDisplayTimer.value = true;
+  displayTimerSeconds.value = message.roundTime;
 });
 
 socketService.setOnShowQuestionAnswerCallback((message) => {
   gameScreenRef.value?.showCorrectAnswer();
+  canDisplayTimer.value = false;
 });
 
 socketService.setOnStopGameCallback((message) => {
@@ -172,7 +199,8 @@ socketService.setOnShowRatingCallback((message) => {
 
 socketService.setOnShowUpdatedRatingCallback((message) => {
   canDisplayNextRoundStart.value = true;
-  state.context!.questionToUserToRating[state.context!.currentQuestionId] = message.rating;
+  state.context!.questionToUserToRating[state.context!.currentQuestionId] =
+    message.rating;
   ratingScreenRef.value?.applyChanges(message.rating);
 });
 
@@ -207,8 +235,13 @@ useFetch(`/api/quiz/editor/context/${contextId}`)
   .json<QuizContextDto>()
   .then((value) => {
     state.context = value.data.value!;
-    state.showRating = value.data.value!.questionToUserToRating[value.data.value!.currentQuestionId] ?? {};
-    canDisplayRating.value = value.data.value!.gameFinished || (!value.data.value!.roundStarted && value.data.value!.gameStarted);
+    state.showRating =
+      value.data.value!.questionToUserToRating[
+        value.data.value!.currentQuestionId
+      ] ?? {};
+    canDisplayRating.value =
+      value.data.value!.gameFinished ||
+      (!value.data.value!.roundStarted && value.data.value!.gameStarted);
     socketService.activate();
   });
 
@@ -231,6 +264,13 @@ const ratingScreenRef =
 
 (window as any).showCorrect = () => {
   gameScreenRef.value?.showCorrectAnswer();
+};
+
+const handleRemoveParticipant = (user: User) => {
+  state.context!.participants = state.context!.participants.filter(
+    (u) => u.userId != user.userId
+  );
+  toast.error("Удалён пользователь " + user.username);
 };
 </script>
 

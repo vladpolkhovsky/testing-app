@@ -1,5 +1,6 @@
 import type { User } from "./User";
 
+export type OnDisconnectCallback = (message: WsMessage) => void;
 export type OnStartGameCallback = (message: WsMessage) => void;
 export type OnStartRoundCallback = (message: WsMessage) => void;
 export type OnShowQuestionCallback = (message: WsShowQuestionMessage) => void;
@@ -13,7 +14,7 @@ export type OnUserConnectedCallback = (message: WsUserConnectedMessage) => void;
 
 export interface WsUserConnectedMessage extends WsMessage {
   type: "USER_CONNECTED";
-  user: User
+  user: User;
 }
 
 export interface WsShowQuestionMessage extends WsMessage {
@@ -51,4 +52,5 @@ export type WsMessageType =
   | "SHOW_RATING"
   | "SHOW_UPDATED_RATING"
   | "STOP_GAME"
-  | "USER_CONNECTED";
+  | "USER_CONNECTED"
+  | "DISCONNECT";

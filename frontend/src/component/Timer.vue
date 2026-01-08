@@ -1,19 +1,19 @@
 <template>
   <div v-if="secondLeft != undefined"
-       class="w-[300px] md:w-[450px] lg:w-[600px] xl:w-[800px] flex w-full items-center justify-center gap-5">
+       class="w-full flex items-center justify-center gap-5">
     <div class="w-full flex justify-end">
-      <div class="bg-gradient-to-r text-transparent from-blue-600 to-purple-600 h-[5px]" :style="{'width': `${width.value}%`}"></div>
+      <div class="bg-linear-to-r text-transparent from-blue-600 to-purple-600 h-3 rounded-2xl" :style="{'width': `${width.value}%`}"></div>
     </div>
-    <div class="relative flex items-center justify-center h-[30px] w-[75px]">
+    <div class="relative flex items-center justify-center h-7.5 w-45">
       <Transition name="slide-up">
         <span :key="secondLeft"
-              class="absolute text-xl md:text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent from-blue-600 to-purple-600">
+              class="absolute text-5xl font-bold bg-linear-to-b bg-clip-text text-transparent from-blue-600 to-purple-600">
           {{ secondLeft }}
         </span>
       </Transition>
     </div>
     <div class="w-full flex justify-start">
-      <div class="bg-gradient-to-l text-transparent from-blue-600 to-purple-600 h-[5px]" :style="{'width': `${width.value}%`}"></div>
+      <div class="bg-linear-to-l text-transparent from-blue-600 to-purple-600 h-3 rounded-2xl" :style="{'width': `${width.value}%`}"></div>
     </div>
   </div>
 
@@ -100,17 +100,17 @@ defineExpose({
 
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.25s ease-out;
+  transition: all 0.5s ease-out;
 }
 
 .slide-up-enter-from {
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(45px);
 }
 
 .slide-up-leave-to {
   opacity: 0;
-  transform: translateY(-30px);
+  transform: translateY(-45px);
 }
 
 </style>

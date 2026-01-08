@@ -3,6 +3,7 @@ import { SocketFactory } from "@/service/SocketFactory.ts";
 import type { OnConnectCallback } from "@/model/types.ts";
 import type { User } from "@/model/User.ts";
 import type {
+  OnDisconnectCallback,
   OnNotifySavedCallback,
   OnShowQuestionAnswerCallback,
   OnShowQuestionCallback,
@@ -21,7 +22,6 @@ import type {
 } from "@/model/stomp-messages";
 
 export class SocketService {
-
   private roomId: string;
   private userId?: string;
   private client: Client;
@@ -53,7 +53,10 @@ export class SocketService {
       if (type == "START_ROUND")
         this.onStartRoundCallback?.call(this, pasred as WsMessage);
       if (type == "SHOW_QUESTION")
-        this.onShowQuestionCallback?.call(this, pasred as WsShowQuestionMessage);
+        this.onShowQuestionCallback?.call(
+          this,
+          pasred as WsShowQuestionMessage
+        );
       if (type == "SHOW_QUESTION_ANSWER")
         this.onShowQuestionAnswerCallback?.call(this, pasred as WsMessage);
       if (type == "NOTIFY_ANSWER_SAVED")
@@ -67,7 +70,10 @@ export class SocketService {
       if (type == "STOP_GAME")
         this.onStopGameCallback?.call(this, pasred as WsMessage);
       if (type == "USER_CONNECTED")
-        this.onUserConnectedCallbackCallback?.call(this, pasred as WsUserConnectedMessage);
+        this.onUserConnectedCallbackCallback?.call(
+          this,
+          pasred as WsUserConnectedMessage
+        );
     });
 
     if (this.userId) {
@@ -80,12 +86,14 @@ export class SocketService {
             this,
             pasred as WsAnswerSavedMessage
           );
+        if (type == "DISCONNECT")
+          this.onDisconnectCallback?.call(this, pasred as WsMessage);
       });
     }
   }
 
   public startQuiz() {
-    console.log('start round')
+    console.log("start round");
     this.client.publish({
       destination: `/app/quiz/${this.roomId}/start`,
     });
@@ -118,22 +126,28 @@ export class SocketService {
     this.client.activate();
   }
 
+  private onDisconnectCallback: OnDisconnectCallback | null = null;
   private onStartGameCallback: OnStartGameCallback | null = null;
   private onStartRoundCallback: OnStartRoundCallback | null = null;
   private onShowQuestionCallback: OnShowQuestionCallback | null = null;
-  private onShowQuestionAnswerCallback: OnShowQuestionAnswerCallback | null = null;
+  private onShowQuestionAnswerCallback: OnShowQuestionAnswerCallback | null =
+    null;
   private onNotifySavedCallback: OnNotifySavedCallback | null = null;
   private onNotifyMySavedCallback: OnNotifySavedCallback | null = null;
   private onStopGameCallback: OnStopGameCallback | null = null;
   private onStopRoundCallback: OnStopRoundCallback | null = null;
   private onShowRatingCallback: OnShowRatingCallback | null = null;
-  private onShowUpdatedRatingCallback: OnShowUpdatedRatingCallback | null = null;
-  private onUserConnectedCallbackCallback: OnUserConnectedCallback | null = null;
+  private onShowUpdatedRatingCallback: OnShowUpdatedRatingCallback | null =
+    null;
+  private onUserConnectedCallbackCallback: OnUserConnectedCallback | null =
+    null;
 
-  public setOnUserConnectedCallbackCallback(onUserConnectedCallbackCallback: OnUserConnectedCallback) {
+  public setOnUserConnectedCallbackCallback(
+    onUserConnectedCallbackCallback: OnUserConnectedCallback
+  ) {
     this.onUserConnectedCallbackCallback = onUserConnectedCallbackCallback;
   }
-  
+
   public setOnStartGameCallback(onStartGameCallback: OnStartGameCallback) {
     this.onStartGameCallback = onStartGameCallback;
   }
@@ -176,6 +190,10 @@ export class SocketService {
 
   public setOnShowRatingCallback(onShowRatingCallback: OnShowRatingCallback) {
     this.onShowRatingCallback = onShowRatingCallback;
+  }
+
+  public setOnDisconnectCallback(onDisconnectCallback: OnDisconnectCallback) {
+    this.onDisconnectCallback = onDisconnectCallback;
   }
 
   public setOnShowUpdatedRatingCallback(

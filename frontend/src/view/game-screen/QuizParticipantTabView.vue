@@ -4,12 +4,29 @@ import type { QuizContextDto } from "@/model/quiz/QuizContextDto";
 import type { User } from "@/model/User";
 import { useQRCode } from "@vueuse/integrations/useQRCode";
 import { Delete, DeleteIcon, Loader, UserRoundMinus } from "lucide-vue-next";
+import { toast } from "vue-sonner";
 
 const inviteLink = window.location.toString() + "/p";
 const props = defineProps<{ context: QuizContextDto }>();
 const qrCode = useQRCode(inviteLink);
 
-const deletePerson = (user: User) => {};
+const deletePerson = (user: User) => {
+  fetch(`/api/quiz/editor/context/delete/${props.context.id}/${user.userId}`, {
+    method: "POST",
+  }).then((resp) => {
+    if (resp.status != 200) {
+      throw new Error(resp.statusText)
+    }
+  }).then(() => {
+    emit("removeParticipan", user);
+  }).catch((error: Error) => {
+    toast.error(error.message)
+  });
+};
+
+const emit = defineEmits<{
+  removeParticipan: [user: User];
+}>();
 </script>
 
 <template>
