@@ -9,7 +9,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  treeImagePath: '/christmas_tree.png'
+  treeImagePath: '/dasha.png'
 })
 
 const {

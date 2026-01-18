@@ -1,14 +1,12 @@
 <template>
   <LiquidGlass class="w-full h-100vh">
     <TransitionGroup name="list">
-      <LiquidGlass v-if="canDisplayTimer" class="w-full">
-        <div class="min-h-15 flex justify-between">
-          <Timer :seconds="displayTimerSeconds" class="mx-auto" />
-        </div>
-      </LiquidGlass>
-      <div key="header" v-else>
+      <div key="header">
         <LiquidGlass key="header" v-if="state.context">
-          <div
+          <div v-if="canDisplayTimer" class="min-h-15 flex justify-between">
+            <Timer :seconds="displayTimerSeconds" class="mx-auto" />
+          </div>
+          <div v-else
             class="flex justify-between items-center gap-3 ps-3 pe-3 w-full min-h-15"
           >
             <div class="inline-flex gap-3 items-center">

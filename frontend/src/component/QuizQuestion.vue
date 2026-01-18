@@ -13,8 +13,9 @@
 
         <!-- Изображение -->
         <div v-if="imageId" class="relative flex items-center justify-center"
-            :class="[orientation === 'vertical' ? 'h-full' : 'w-full']">
+            :class="[orientation === 'vertical' ? 'min-h-[500px] max-h-[75vh]' : 'max-h-150']">
             <img ref="imageRef" :src="`/api/quiz/image/${imageId}`" alt="Иллюстрация к вопросу" class="rounded-md border"
+                :class="[orientation === 'vertical' ? 'min-h-[500px] max-h-[75vh]' : 'max-h-150']"
                 @load="handleImageLoad" @error="handleImageError" />
             <div v-if="!imageLoaded" class="absolute inset-0 flex items-center justify-center">
                 <div class="text-gray-400">

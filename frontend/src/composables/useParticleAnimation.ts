@@ -21,7 +21,7 @@ interface UseParticleAnimationOptions {
 
 export const useParticleAnimation = (options: UseParticleAnimationOptions = {}) => {
   const config: ParticleConfig = {...DEFAULT_CONFIG, ...options.config}
-  const treeImagePath = options.treeImagePath || '/christmas_tree.png'
+  const treeImagePath = options.treeImagePath || '/dasha.png'
 
   const canvasRef = ref<HTMLCanvasElement | null>(null)
   const particles: Ref<Particle[]> = ref([])

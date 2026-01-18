@@ -140,7 +140,7 @@ socketService.setOnDisconnectCallback((message) => {
           v-else
         >
           <div
-            class="mx-auto w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center"
+            class="mx-auto w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-linear-to-r from-blue-500/20 to-purple-500/20 flex items-center justify-center"
           >
             <Clock
               :size="32"
