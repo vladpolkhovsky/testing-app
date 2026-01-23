@@ -5,16 +5,13 @@ import by.vppolkhovsky.tests_app.dto.QuizContext;
 import by.vppolkhovsky.tests_app.dto.QuizDto;
 import by.vppolkhovsky.tests_app.mapper.QuizMapper;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -27,6 +24,7 @@ public class QuizContextHolder {
 
     public QuizContextHolder(QuizMapper quizMapper) {
         this.quizMapper = quizMapper;
+        final Integer a = 12;
     }
 
     public QuizContext createContext(String contextId, QuizDto quizDto) {

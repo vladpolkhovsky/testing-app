@@ -113,7 +113,7 @@
 <script setup lang="ts">
 import LiquidGlass from "@/component/LiquidGlass.vue";
 import { Loader, LucideHome } from "lucide-vue-next";
-import { computed, reactive, ref, useTemplateRef, watch } from "vue";
+import { computed, onMounted, reactive, ref, useTemplateRef, watch } from "vue";
 import QuizGameScreen from "./game-screen/QuizGameScreen.vue";
 import { useRoute } from "vue-router";
 import { useFetch } from "@vueuse/core";
@@ -125,6 +125,7 @@ import QuizParticipantTabView from "./game-screen/QuizParticipantTabView.vue";
 import QuizNewRating from "./game-screen/QuizNewRating.vue";
 import Timer from "@/component/Timer.vue";
 import type { User } from "@/model/User";
+import { SoundEngine } from "@/service/SoundEngine";
 
 type TabState = "game" | "pariticipant";
 
@@ -166,6 +167,7 @@ socketService.setOnStartGameCallback((message) => {
 
 socketService.setOnStartRoundCallback((message) => {
   state.context!.roundStarted = true;
+  SoundEngine.nextTrack();
 });
 
 socketService.setOnShowQuestionCallback((message) => {
@@ -270,6 +272,11 @@ const handleRemoveParticipant = (user: User) => {
   );
   toast.error("Удалён пользователь " + user.username);
 };
+
+onMounted(() => {
+  SoundEngine.initialize();
+});
+
 </script>
 
 <style scoped>
